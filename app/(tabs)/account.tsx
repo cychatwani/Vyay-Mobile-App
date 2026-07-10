@@ -1,24 +1,27 @@
 import { ScrollView, StyleSheet, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { verticalScale } from "react-native-size-matters";
 
 import { logout } from "@/auth/coreAuth";
 import NameCard from "@/components/account/_NameCard";
 import IdentityCard from "@/components/account/IdentityCard";
 import LogoutButton from "@/components/account/LogoutButton";
 import SettingsLink from "@/components/account/SettingsLink";
-import SafeView from "@/components/custom/SafeView/SafeView";
 import MainHeaderBar from "@/components/MainHeaderBar";
 import { Dimens } from "@/constants/Dimes";
 import { useColorsV2 } from "@/store/themeStore";
-import { verticalScale } from "react-native-size-matters";
 
-const account = () => {
+const Account = () => {
   const colors = useColorsV2();
+  const insets = useSafeAreaInsets();
 
   return (
-    <SafeView
-      style={{ flex: 1, backgroundColor: colors.page }}
-      statusBarColor={colors.page}
-      statusBarStyle="dark-content"
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: colors.page,
+        paddingTop: insets.top,
+      }}
     >
       <MainHeaderBar />
 
@@ -27,21 +30,24 @@ const account = () => {
         showsVerticalScrollIndicator={false}
       >
         <NameCard />
+
         <View style={styles.gap}>
           <IdentityCard />
         </View>
+
         <View style={styles.gap}>
           <SettingsLink />
         </View>
+
         <View style={styles.gap}>
           <LogoutButton onPress={logout} />
         </View>
       </ScrollView>
-    </SafeView>
+    </View>
   );
 };
 
-export default account;
+export default Account;
 
 const styles = StyleSheet.create({
   content: {
@@ -49,5 +55,7 @@ const styles = StyleSheet.create({
     paddingTop: Dimens.vMd,
     paddingBottom: verticalScale(120),
   },
-  gap: { marginTop: Dimens.vLg },
+  gap: {
+    marginTop: Dimens.vLg,
+  },
 });

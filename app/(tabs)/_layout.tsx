@@ -1,9 +1,9 @@
 // app/(tabs)/_layout.tsx
 import { Tabs, useSegments } from "expo-router";
-import React from "react";
 
 import { TabBar } from "@/components/TabBar";
 import { useColorScheme } from "@/hooks/useColorScheme";
+import { useUiStore } from "@/store/uiStore";
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -12,11 +12,14 @@ export default function TabLayout() {
   // Hide tab bar if we're in the auth group
   const inAuthGroup = segments.includes("(auth)");
 
+  // Hide tab bar while a bottom sheet is open so it doesn't stack above it
+  const isSheetOpen = useUiStore((s) => s.isSheetOpen);
+
   return (
     <Tabs
       tabBar={(props) => {
-        // Don't render tab bar if in auth screens
         if (inAuthGroup) return null;
+        // if (isSheetOpen) return null;
         return <TabBar {...props} />;
       }}
       screenOptions={{

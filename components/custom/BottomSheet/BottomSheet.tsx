@@ -7,6 +7,7 @@ import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import { StyleSheet } from "react-native";
 
 import { useColorsV2 } from "@/store/themeStore";
+import { useUiStore } from "@/store/uiStore";
 
 type BottomSheetProps = {
   isOpen: boolean;
@@ -15,11 +16,6 @@ type BottomSheetProps = {
   children: React.ReactNode;
 };
 
-/**
- * Generic, state-controlled bottom sheet. Uses BottomSheetModal so it always
- * portals to the root and overlays the whole screen, no matter which component
- * renders it. Requires <BottomSheetModalProvider> at the app root.
- */
 export default function BottomSheet({
   isOpen,
   onClose,
@@ -27,27 +23,50 @@ export default function BottomSheet({
   children,
 }: BottomSheetProps) {
   const colors = useColorsV2();
-  const ref = useRef<BottomSheetModal>(null);
 
-  // Always have a snap point so the sheet never depends on dynamic measurement.
+  const ref = useRef<BottomSheetModal>(null);
+  const firstRender = useRef(true);
+
+  const setSheetOpen = useUiStore((s) => s.setSheetOpen);
+
   const points = useMemo(() => snapPoints ?? ["50%"], [snapPoints]);
 
   useEffect(() => {
-    console.log("[sheet] useEffect, isOpen =", isOpen, "ref =", !!ref.current);
-    if (isOpen) {
-      requestAnimationFrame(() => {
-        console.log("[sheet] RAF firing present(), ref =", !!ref.current);
-        ref.current?.present();
-        console.log("[sheet] present() called");
-      });
-    } else {
-      ref.current?.dismiss();
+    console.log("[BottomSheet] MOUNT");
+
+    return () => {
+      console.log("[BottomSheet] UNMOUNT");
+    };
+  }, []);
+
+  useEffect(() => {
+    console.log("[BottomSheet] isOpen =", isOpen);
+    console.log("[BottomSheet] ref.current =", ref.current);
+
+    setSheetOpen(isOpen);
+
+    if (firstRender.current) {
+      firstRender.current = false;
+      console.log("[BottomSheet] skipping first effect");
+      return;
     }
-  }, [isOpen]);
+
+    if (isOpen) {
+      console.log("[BottomSheet] calling present()");
+      ref.current?.present();
+      console.log("[BottomSheet] present() finished");
+    }
+  }, [isOpen, setSheetOpen]);
 
   const handleDismiss = useCallback(() => {
-    if (isOpen) onClose();
-  }, [isOpen, onClose]);
+    console.log("[BottomSheet] onDismiss");
+
+    setSheetOpen(false);
+
+    if (isOpen) {
+      onClose();
+    }
+  }, [isOpen, onClose, setSheetOpen]);
 
   const renderBackdrop = useCallback(
     (props: any) => (
@@ -67,11 +86,24 @@ export default function BottomSheet({
       ref={ref}
       snapPoints={points}
       enablePanDownToClose
-      onDismiss={handleDismiss}
       backdropComponent={renderBackdrop}
-      containerStyle={{ zIndex: 9999, elevation: 9999 }}
-      handleIndicatorStyle={{ backgroundColor: colors.border }}
-      backgroundStyle={{ backgroundColor: colors.card }}
+      onDismiss={handleDismiss}
+      containerStyle={{
+        zIndex: 9999,
+        elevation: 9999, // Android
+      }}
+      onChange={(index) => {
+        console.log("[BottomSheet] onChange =", index);
+      }}
+      onAnimate={(fromIndex, toIndex) => {
+        console.log("[BottomSheet] onAnimate", fromIndex, "->", toIndex);
+      }}
+      handleIndicatorStyle={{
+        backgroundColor: colors.border,
+      }}
+      backgroundStyle={{
+        backgroundColor: colors.card,
+      }}
     >
       <BottomSheetView style={styles.content}>{children}</BottomSheetView>
     </BottomSheetModal>
@@ -81,7 +113,7 @@ export default function BottomSheet({
 const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 20,
-    paddingBottom: 32,
     paddingTop: 8,
+    paddingBottom: 32,
   },
 });
