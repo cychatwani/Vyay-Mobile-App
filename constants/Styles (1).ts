@@ -1,7 +1,7 @@
+import { Dimens } from "./Dimes";
 import { scale } from "react-native-size-matters";
 import { ThemePalette } from "./Colors";
 import { ThemePaletteV2 } from "./ColorsV2";
-import { Dimens } from "./Dimes";
 import { FONTS } from "./Fonts";
 
 /* ------------------------------------------------------------------ *

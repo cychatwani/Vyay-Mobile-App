@@ -1,32 +1,34 @@
-import { Pressable, StyleSheet, Text, View, Platform } from "react-native";
-import React from "react";
-import { useColors } from "@/store/themeStore";
-import { ThemePalette } from "@/constants/Colors";
-import QRCode from "react-native-qrcode-svg";
-import {
-  getCardDefaults,
-  getTitleFontStyle,
-  getSubTitleFontStyle,
-} from "@/constants/Styles";
-import { useAuthStore } from "@/store/authStore";
-import { scale } from "react-native-size-matters";
 import { Feather } from "@expo/vector-icons";
-import { Share } from "react-native";
+import { useState } from "react";
+import { Pressable, Share, StyleSheet, Text, View } from "react-native";
+import { scale } from "react-native-size-matters";
+
+import BottomSheet from "@/components/custom/BottomSheet/BottomSheet";
+import { ThemePaletteV2 } from "@/constants/ColorsV2";
+import { Dimens } from "@/constants/Dimes";
+import { FONTS } from "@/constants/Fonts";
+import { getCardV2, getSubtitleV2, getTitleV2 } from "@/constants/Styles";
+import { useAuthStore } from "@/store/authStore";
+import { useColorsV2 } from "@/store/themeStore";
+import IdentityQr from "./IdentityQr";
 
 const IdentityCard = () => {
-  const colors = useColors();
+  const colors = useColorsV2();
   const styles = getStyles(colors);
   const { user } = useAuthStore();
-  const userId = user?.id; // From your auth store
-  const inviteLink = `https://spliiteasy.app/invite/${userId}`;
+
+  const [qrOpen, setQrOpen] = useState(false);
+
+  const userId = user?.userId;
+  const inviteLink = `https://vyay.app/invite/${userId}`;
 
   const shareInviteLink = async () => {
     try {
       await Share.share({
         message:
-          "Click this to add me friend on SplitEasy to share expenses together " +
+          "Add me on Vyay so we can split and settle expenses together " +
           inviteLink,
-        title: "Add me on SplitEasy",
+        title: "Add me on Vyay",
       });
     } catch (error: any) {
       console.error("Error sharing:", error.message);
@@ -35,63 +37,98 @@ const IdentityCard = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.titleContainer}>
-        <Text style={styles.title}>Connect with Friends</Text>
-        <Text style={styles.subTitle}>
-          Share your profile to split expenses together
-        </Text>
-        <QRCode
-          value={inviteLink} // The data to encode
-          size={scale(145)} // Size of the QR code in pixels
-          color={colors.qrCode} // Color of the QR code dots
-          backgroundColor={colors.card} // Background color
-          logo={require("@/assets/images/splash-icon.png")}
-          logoBackgroundColor="transparent"
-        />
-        <Text style={styles.subTitle}>Scan to add me on SpliitEasy</Text>
+      <Text style={styles.title}>Connect with friends</Text>
+      <Text style={styles.subTitle}>
+        Share your profile to split expenses together
+      </Text>
 
-        {/* ✅ Only ripple added here */}
+      <View style={styles.buttonRow}>
+        <Pressable
+          onPress={() => {
+            console.log("[qr] Show QR tapped, opening sheet");
+            setQrOpen(true);
+          }}
+          android_ripple={{ color: colors.ripple }}
+          style={({ pressed }) => [
+            styles.button,
+            styles.buttonOutline,
+            pressed && { opacity: 0.9 },
+          ]}
+        >
+          <Feather name="maximize" size={scale(18)} color={colors.brand} />
+          <Text style={styles.buttonOutlineLabel}>Show QR</Text>
+        </Pressable>
+
         <Pressable
           onPress={shareInviteLink}
+          android_ripple={{ color: colors.ripple }}
           style={({ pressed }) => [
-            styles.shareButton,
-            pressed && Platform.OS === "ios" && { opacity: 0.8 },
+            styles.button,
+            styles.buttonPrimary,
+            pressed && { opacity: 0.9 },
           ]}
-          android_ripple={{ color: colors.rippleColor}}
         >
-          <View style={styles.shareButtonContentContianer}>
-            <Feather name="send" size={scale(22)} color={colors.white} />
-            <Text
-              style={{ ...getSubTitleFontStyle(colors), color: colors.white }}
-            >
-              Send Invite Link
-            </Text>
-          </View>
+          <Feather name="send" size={scale(18)} color={colors.white} />
+          <Text style={styles.buttonPrimaryLabel}>Invite link</Text>
         </Pressable>
       </View>
+
+      <BottomSheet
+        isOpen={qrOpen}
+        onClose={() => setQrOpen(false)}
+        snapPoints={["60%"]}
+      >
+        <IdentityQr value={inviteLink} />
+      </BottomSheet>
     </View>
   );
 };
 
 export default IdentityCard;
 
-const getStyles = (colors: ThemePalette) =>
+const getStyles = (colors: ThemePaletteV2) =>
   StyleSheet.create({
-    container: { ...getCardDefaults(colors) },
-    title: { ...getTitleFontStyle(colors) },
-    subTitle: { ...getSubTitleFontStyle(colors) },
-    titleContainer: { alignItems: "center" },
-    shareButton: {
-      ...getCardDefaults(colors),
-      backgroundColor: colors.main,
-      overflow: Platform.OS === "android" ? "hidden" : "visible", // needed for ripple
-      borderRadius: scale(30),
-      
+    container: {
+      ...getCardV2(colors),
     },
-    shareButtonContentContianer: {
+    title: {
+      ...getTitleV2(colors),
+    },
+    subTitle: {
+      ...getSubtitleV2(colors),
+      marginTop: scale(2),
+    },
+    buttonRow: {
       flexDirection: "row",
-      padding:scale(5),
-      justifyContent: "center",
+      gap: scale(12),
+      marginTop: Dimens.lg,
+    },
+    button: {
+      flex: 1,
+      flexDirection: "row",
       alignItems: "center",
+      justifyContent: "center",
+      gap: scale(8),
+      height: scale(46),
+      borderRadius: Dimens.radiusPill,
+      overflow: "hidden",
+    },
+    buttonPrimary: {
+      backgroundColor: colors.brand,
+    },
+    buttonPrimaryLabel: {
+      fontFamily: FONTS.medium,
+      fontSize: scale(14),
+      color: colors.white,
+    },
+    buttonOutline: {
+      borderWidth: 1.5,
+      borderColor: colors.brand,
+      backgroundColor: colors.brandSubtle,
+    },
+    buttonOutlineLabel: {
+      fontFamily: FONTS.medium,
+      fontSize: scale(14),
+      color: colors.brand,
     },
   });

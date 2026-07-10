@@ -1,39 +1,59 @@
-import { StyleSheet, Text, View } from "react-native";
 import React from "react";
-import SafeView from "@/components/custom/SafeView/SafeView";
-import { useColors } from "@/store/themeStore";
-import MainHeaderBar from "@/components/MainHeaderBar";
+import { ScrollView, StyleSheet, View } from "react-native";
+
+import { logout } from "@/auth/coreAuth";
 import NameCard from "@/components/account/_NameCard";
-import { Dimens } from "@/constants/Dimes";
 import IdentityCard from "@/components/account/IdentityCard";
+import LogoutButton from "@/components/account/LogoutButton";
 import SettingsLink from "@/components/account/SettingsLink";
-import SwipeToLogout from "@/components/account/SwipeToLogout";
+import SafeView from "@/components/custom/SafeView/SafeView";
+import MainHeaderBar from "@/components/MainHeaderBar";
+import { Dimens } from "@/constants/Dimes";
+import { useColorsV2 } from "@/store/themeStore";
+import { verticalScale } from "react-native-size-matters";
 
 const account = () => {
-  const colors = useColors();
+  const colors = useColorsV2();
+
   return (
     <SafeView
-      style={{ flex: 1, backgroundColor: colors.background }}
-      statusBarColor={colors.background}
+      style={{ flex: 1, backgroundColor: colors.page }}
+      statusBarColor={colors.page}
       statusBarStyle="dark-content"
     >
       <MainHeaderBar />
-      <View style={{ marginTop: Dimens.paddingMarginHorizontal }}>
+
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
         <NameCard />
-        <View style={{ marginTop:Dimens.paddingMarginHorizontal }}>
+
+        <View style={styles.gap}>
           <IdentityCard />
         </View>
-        <View style={{ marginTop:Dimens.paddingMarginHorizontal }}>
-          <SettingsLink/>
+
+        <View style={styles.gap}>
+          <SettingsLink />
         </View>
-        <View style={{ marginTop:Dimens.paddingMarginHorizontal }}>
-          <SwipeToLogout onLogout={()=>{console.log("Will logout now")}}/>
+
+        <View style={styles.gap}>
+          <LogoutButton onPress={logout} />
         </View>
-      </View>
+      </ScrollView>
     </SafeView>
   );
 };
 
 export default account;
 
-const styles = StyleSheet.create({});
+const styles = StyleSheet.create({
+  content: {
+    paddingHorizontal: Dimens.sm, // scale(8) — was Dimens.md (12)
+    paddingTop: Dimens.vMd,
+    paddingBottom: verticalScale(120),
+  },
+  gap: {
+    marginTop: Dimens.vLg,
+  },
+});

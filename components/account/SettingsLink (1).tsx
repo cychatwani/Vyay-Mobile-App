@@ -26,7 +26,10 @@ const SettingsLink = ({
     <Pressable
       onPress={onPress}
       android_ripple={{ color: colors.ripple }}
-      style={({ pressed }) => [styles.container, pressed && { opacity: 0.9 }]}
+      style={({ pressed }) => [
+        styles.container,
+        pressed && { opacity: 0.9 },
+      ]}
     >
       <View style={styles.left}>
         <Feather name={icon} size={scale(20)} color={colors.text2} />

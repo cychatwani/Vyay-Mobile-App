@@ -1,9 +1,9 @@
 // src/lib/authSignIn.ts (or where you have the function)
 import { Method } from "@/constants/Method";
-import { apiPost } from "@/utils/ApiHelper";
-import { saveRefreshToken } from "./refreshTokenUtils";
 import { useAuthStore } from "@/store/authStore";
 import { AuthResponse, UserDetails } from "@/types/auth";
+import { apiPost } from "@/utils/ApiHelper";
+import { deleteRefreshToken, saveRefreshToken } from "./refreshTokenUtils";
 
 import { router } from "expo-router";
 
@@ -14,22 +14,22 @@ export const redirectToHome = () => {
 
 export const SignInWithRefreshToken = async (
   refreshToken: string,
-  onSuccess?: () => void
+  onSuccess?: () => void,
 ) => {
   try {
     console.log(
       "[auth] Trying to sign-in with refresh token => ",
-      refreshToken
+      refreshToken,
     );
     const response = await apiPost<AuthResponse, { refreshToken: string }>(
       Method.AUTH_REFRESH,
-      { refreshToken }
+      { refreshToken },
     );
 
     if (!response || !response.data) {
       console.error(
         "[auth] No response.data from SignInWithGoogleIdToken",
-        response
+        response,
       );
       throw new Error("Invalid auth response");
     }
@@ -53,7 +53,7 @@ export const SignInWithRefreshToken = async (
       accessToken,
       newRefreshToken,
       userDetails,
-      onSuccess ? onSuccess : redirectToHome
+      onSuccess ? onSuccess : redirectToHome,
     );
   } catch (err) {
     console.error("[auth] SignInWithGoogleIdToken error:", err);
@@ -68,12 +68,12 @@ export const SignInWithGoogleIdToken = async (idToken: string) => {
   try {
     console.log(
       "[auth] SignInWithGoogleIdToken -> calling api with idToken",
-      !!idToken
+      !!idToken,
     );
 
     const response = await apiPost<AuthResponse, { idToken: string }>(
       Method.AUTH_GOOGLE,
-      { idToken }
+      { idToken },
     );
 
     console.log("[auth] API response:", response);
@@ -82,7 +82,7 @@ export const SignInWithGoogleIdToken = async (idToken: string) => {
     if (!response || !response.data) {
       console.error(
         "[auth] No response.data from SignInWithGoogleIdToken",
-        response
+        response,
       );
       throw new Error("Invalid auth response");
     }
@@ -103,12 +103,66 @@ export const SignInWithGoogleIdToken = async (idToken: string) => {
       accessToken,
       refreshToken,
       userDetails,
-      redirectToHome
+      redirectToHome,
     );
     console.log("[auth] authenticateUser completed");
   } catch (err) {
     console.error("[auth] SignInWithGoogleIdToken error:", err);
     throw err;
+  }
+};
+
+export const SignInWithEmailPassword = async (
+  email: string,
+  password: string,
+) => {
+  console.log("[auth] SignInWithEmailPassword -> calling api");
+
+  const response = await apiPost<
+    AuthResponse,
+    { email: string; password: string }
+  >(Method.AUTH_LOGIN, { email, password });
+
+  if (!response || !response.data) {
+    console.error(
+      "[auth] No response.data from SignInWithEmailPassword",
+      response,
+    );
+    throw new Error("Invalid auth response");
+  }
+
+  const { accessToken, refreshToken, userDetails } = response.data;
+
+  if (!accessToken || !refreshToken || !userDetails) {
+    console.error("[auth] Missing tokens or userDetails", {
+      accessToken,
+      refreshToken,
+      userDetails,
+    });
+    throw new Error("Missing auth payload");
+  }
+
+  await authenticateUser(
+    accessToken,
+    refreshToken,
+    userDetails,
+    redirectToHome,
+  );
+  console.log("[auth] SignInWithEmailPassword completed");
+};
+
+/**
+ * Central logout. Mirrors authenticateUser: clears the store, wipes the
+ * persisted refresh token so silent-login won't re-auth, then redirects.
+ */
+export const logout = async () => {
+  try {
+    useAuthStore.getState().logout();
+    await deleteRefreshToken();
+  } catch (err) {
+    console.warn("[auth] logout cleanup error:", err);
+  } finally {
+    router.replace("/(auth)/login");
   }
 };
 
@@ -120,7 +174,7 @@ const authenticateUser = async (
   accessToken: string,
   refreshToken: string,
   userDetails: UserDetails,
-  onSuccess?: () => void
+  onSuccess?: () => void,
 ) => {
   try {
     // imperative access to setters (safe outside components)
@@ -135,7 +189,7 @@ const authenticateUser = async (
       "[auth] accessToken present:",
       !!accessToken,
       "user:",
-      userDetails?.id ?? userDetails?.fullName
+      userDetails?.userId ?? userDetails?.fullName,
     );
 
     store.setAccessToken(accessToken);

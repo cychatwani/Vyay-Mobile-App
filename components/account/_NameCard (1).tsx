@@ -2,8 +2,8 @@ import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { scale } from "react-native-size-matters";
 
-import { ThemePaletteV2 } from "@/constants/ColorsV2";
 import { getCardV2, getSubtitleV2, getTitleV2 } from "@/constants/Styles";
+import { ThemePaletteV2 } from "@/constants/ColorsV2";
 import { useAuthStore } from "@/store/authStore";
 import { useColorsV2 } from "@/store/themeStore";
 import CircularPictureDisplay from "../CircularPictureDisplay";
