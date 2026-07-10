@@ -11,6 +11,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { SignInWithRefreshToken } from "@/auth/coreAuth";
 import { getRefreshToken } from "@/auth/refreshTokenUtils";
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { MenuProvider } from "react-native-popup-menu";
 
 const MIN_SPLASH_MS = 3500;
@@ -133,7 +134,9 @@ export default function RootLayout() {
   // values. Without it, insets are all 0 and content renders under the notch.
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>{content}</SafeAreaProvider>
+      <SafeAreaProvider>
+        <BottomSheetModalProvider>{content}</BottomSheetModalProvider>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }

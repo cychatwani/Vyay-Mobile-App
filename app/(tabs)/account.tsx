@@ -1,4 +1,3 @@
-import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { ScrollView, StyleSheet, View } from "react-native";
 
 import { logout } from "@/auth/coreAuth";
@@ -16,34 +15,29 @@ const account = () => {
   const colors = useColorsV2();
 
   return (
-    <BottomSheetModalProvider>
-      <SafeView
-        style={{ flex: 1, backgroundColor: colors.page }}
-        statusBarColor={colors.page}
-        statusBarStyle="dark-content"
+    <SafeView
+      style={{ flex: 1, backgroundColor: colors.page }}
+      statusBarColor={colors.page}
+      statusBarStyle="dark-content"
+    >
+      <MainHeaderBar />
+
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
       >
-        <MainHeaderBar />
-
-        <ScrollView
-          contentContainerStyle={styles.content}
-          showsVerticalScrollIndicator={false}
-        >
-          <NameCard />
-
-          <View style={styles.gap}>
-            <IdentityCard />
-          </View>
-
-          <View style={styles.gap}>
-            <SettingsLink />
-          </View>
-
-          <View style={styles.gap}>
-            <LogoutButton onPress={logout} />
-          </View>
-        </ScrollView>
-      </SafeView>
-    </BottomSheetModalProvider>
+        <NameCard />
+        <View style={styles.gap}>
+          <IdentityCard />
+        </View>
+        <View style={styles.gap}>
+          <SettingsLink />
+        </View>
+        <View style={styles.gap}>
+          <LogoutButton onPress={logout} />
+        </View>
+      </ScrollView>
+    </SafeView>
   );
 };
 
@@ -55,7 +49,5 @@ const styles = StyleSheet.create({
     paddingTop: Dimens.vMd,
     paddingBottom: verticalScale(120),
   },
-  gap: {
-    marginTop: Dimens.vLg,
-  },
+  gap: { marginTop: Dimens.vLg },
 });

@@ -69,6 +69,7 @@ export default function BottomSheet({
       enablePanDownToClose
       onDismiss={handleDismiss}
       backdropComponent={renderBackdrop}
+      containerStyle={{ zIndex: 9999, elevation: 9999 }}
       handleIndicatorStyle={{ backgroundColor: colors.border }}
       backgroundStyle={{ backgroundColor: colors.card }}
     >
