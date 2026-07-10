@@ -12,41 +12,41 @@ export type ThemePalette = {
   white: string;
   pictureBorderColor: string;
   badgeBackgorund: string;
-  qrCode:string;
-  rippleColor:string;
+  qrCode: string;
+  rippleColor: string;
 };
 
 export const Colors = {
   light: {
-    main: "#6366F1",
-    primaryGradient: ["#6366F1", "#A8AFFA"] as const,
-    background: "#F4F6FA", // soft gray-white background
-    card: "#FFFFFF", // pure white card
-    white: "#FFFFFF", // pure white card
+    main: "#595AE4", // vy-brand (indigo-600)
+    primaryGradient: ["#595AE4", "#8E99FF"] as const, // indigo-600 -> indigo-400
+    background: "#FAFBFE", // vy-page
+    card: "#FFFFFF", // vy-card
+    white: "#FFFFFF", // literal white
     primaryShadow: "#000",
-    textPrimary: "#111827", // dark gray, not pure black
-    textSecondary: "#4B5563", // softer gray for subtitles
-    pictureBorderColor: "#f0f0f0",
-    badgeBackgorund: "#EEF2FF",
-    qrCode:"#4B5563",
-    rippleColor:"rgba(255,255,255,0.4)"
-    
+    textPrimary: "#1A1B20", // vy-text
+    textSecondary: "#686A71", // vy-text2
+    pictureBorderColor: "#D9DBE2", // vy-border
+    badgeBackgorund: "#F3F6FF", // vy-brandsubtle
+    qrCode: "#686A71", // vy-text2
+    rippleColor: "rgba(255,255,255,0.4)",
   },
   dark: {
-    main: "#6366F1",
-    primaryGradient: ["#6366F1", "#A8AFFA"] as const,
-    background: "#111827", // near-black but not pure black
-    card: "#1F2937",
-    white: "#FFFFFF", // dark gray card for contrast
+    main: "#8E99FF", // vy-brand dark (indigo-400)
+    primaryGradient: ["#8E99FF", "#4747BD"] as const, // indigo-400 -> indigo-700
+    background: "#0D0E13", // vy-page dark
+    card: "#1A1B20", // vy-card dark
+    white: "#FFFFFF", // literal white
     primaryShadow: "#000",
-    textPrimary: "#F9FAFB", // near-white for strong contrast
-    textSecondary: "#9CA3AF", // muted gray
-    pictureBorderColor: "#f0f0f0",
-    badgeBackgorund: "#EEF2FF",
-    qrCode:"#FFFFFF",
-    rippleColor:"rgba(0,0,0,0.5)"
+    textPrimary: "#F6F6FB", // vy-text dark
+    textSecondary: "#A1A3AA", // vy-text2 dark
+    pictureBorderColor: "#3F4046", // vy-border dark
+    badgeBackgorund: "#1C1D4D", // vy-brandsubtle dark (fixed: was duplicated from light)
+    qrCode: "#F6F6FB", // vy-text dark
+    rippleColor: "rgba(0,0,0,0.5)",
   },
 } satisfies { light: ThemePalette; dark: ThemePalette };
+
 // Dynamic color resolver using current theme
 export function getColor(key: keyof typeof Colors.light) {
   const { dark } = useTheme();
