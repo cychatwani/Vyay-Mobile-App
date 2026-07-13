@@ -1,95 +1,76 @@
+<div align="center">
+
 # Vyay
 
-> **A UPI-first expense splitting app built for India.**  
-> Split expenses with friends, roommates, couples, and travel groups—without spreadsheets, manual calculations, or payment confusion.
+**A UPI-first expense splitting app built for India.**
 
-Vyay is designed to make shared finances effortless by combining an intuitive mobile experience with a backend built for correctness, scalability, and future offline support.
+Split expenses with friends, roommates, couples, and travel groups — without spreadsheets, manual math, or payment confusion.
+
+![Expo SDK](https://img.shields.io/badge/Expo-SDK%2053-000020?logo=expo&logoColor=white)
+![React Native](https://img.shields.io/badge/React%20Native-0.79-61DAFB?logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
+![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20Android-lightgrey)
+
+</div>
+
+Vyay pairs an intuitive mobile experience with a backend built for correctness and scale. This repository is the **mobile client**; the API lives in [VyayCore](#-backend).
+
+---
+
+## 📱 Screenshots
+
+> _Coming soon._
 
 ---
 
 ## ✨ Features
 
-- 💸 Create groups for trips, roommates, couples, events, and more
-- 🧾 Add and split expenses using multiple split methods
-- ⚖️ Real-time balance calculation
-- 🤝 Settlement workflow between members
-- 📱 UPI-first experience designed for Indian users
-- 🎨 Modern Material-inspired UI with light & dark themes
-- 🔐 Secure JWT authentication with refresh tokens
-- 📷 QR identity generation _(scanner integration coming soon)_
+- 🔐 **Secure auth** — email/password + Google sign-in, JWT with refresh tokens
+- ⚡ **Silent login** — refresh-token handshake on launch, behind a branded Lottie splash
+- 💸 **Groups & expenses** — trips, roommates, couples, events, with multiple split methods
+- ⚖️ **Balance dashboard** — spend-by-category breakdown and recent expense feed
+- 🤝 **Settlement workflow** between members
+- 📷 **QR identity** — branded QR at high error-correction, plus native invite-link sharing
+- 🎨 **Light & dark themes** on a semantic token system
+- 🇮🇳 **UPI-first** experience designed for how India actually settles up
+
+> **Status:** Auth is wired to the live backend. Group, expense, and settlement screens are built and run on local data while API integration lands.
 
 ---
 
-# Tech Stack
+## 🛠 Tech Stack
 
-## Mobile
+**Mobile** — Expo SDK 53 · React Native 0.79 · Expo Router · TypeScript
 
-- Expo SDK 53
-- React Native 0.79
-- Expo Router
-- TypeScript
+**State** — Zustand (client) · TanStack Query (server) · react-hook-form · Zod
 
-## State Management
+**UI** — @gorhom/bottom-sheet · react-native-reanimated · react-native-gesture-handler · FlashList · react-native-qrcode-svg · Expo Vector Icons
 
-- Zustand
-- TanStack Query
-- react-hook-form
-- Zod
-
-## UI
-
-- @gorhom/bottom-sheet
-- react-native-qrcode-svg
-- react-native-reanimated
-- react-native-gesture-handler
-- FlashList
-- Expo Vector Icons
-
-## Camera
-
-- react-native-vision-camera _(integrated, QR scanning coming soon)_
+**Camera** — react-native-vision-camera _(integrated; QR scanning in progress)_
 
 ---
 
-# Project Structure
+## 🎨 Design System
 
-```text
-app/
-├── (auth)/                Authentication screens
-├── (tabs)/                Home, Friends, Account
-├── (groupDetail)/         Group detail flow
-└── _layout.tsx            Root layout
-                            • Font loading
-                            • Splash handling
-                            • Silent login
-                            • Global SheetHost
+Every colour resolves through a **semantic token layer** (`constants/ColorsV2.ts`). Components never touch a hex value — they ask for a _role_, and the active theme decides what it means.
 
-components/
-├── account/               Account components
-├── custom/
-│   └── BottomSheet/       Global SheetHost
-└── ui/                    Shared UI components
+**14 status roles**, each a complete set (`bg` · `surface` · `border` · `text` · `icon` · `solid` · `onSolid`), so any financial state renders as a subtle tint, an outlined chip, or a solid CTA without picking new colours:
 
-store/
-├── authStore.ts
-├── themeStore.ts
-└── sheetStore.ts
+`income` · `expense` · `success` · `error` · `warning` · `info` · `pending` · `processing` · `failed` · `refunded` · `danger` · `savings` · `invest` · `rewards`
 
-constants/
-├── ColorsV2.ts
-└── Styles.ts
+One deliberate call worth calling out: **expense rose is softer than error red.** Overspending isn't a failure state, and colouring it like one makes the app feel punitive. `danger` is reserved for genuinely destructive actions.
 
-config/
-└── urls.ts                Backend configuration
-```
+Shared helpers in `constants/Styles.ts` encode the app's **elevation language** — one card surface, radius, hairline border, and shadow used everywhere — so surfaces stay consistent by construction, not by discipline. Spacing and radii come from a single scale; sizing is device-aware via `react-native-size-matters`.
+
+A rebrand or a new theme is a token change, not a find-and-replace across sixty components.
 
 ---
 
-# Global Bottom Sheet Architecture
+## 🧩 Global Bottom Sheet Architecture
 
-Instead of rendering a `BottomSheetModal` inside every screen, Vyay uses a **single global sheet host** mounted above the navigation tree.
+Instead of rendering a `BottomSheetModal` inside every screen, Vyay mounts a **single sheet host** above the navigation tree.
 
-This solves an issue where imperative bottom sheets can become stuck when driven by a boolean state (`isOpen`). Rather than toggling visibility, the app uses a monotonic counter that guarantees every open request is unique.
+This solves a real failure mode: imperative sheets get stuck when driven by a boolean `isOpen`. Setting a flag to `true` when it's already `true` is a no-op — so one stuck flag means a permanently dead sheet. Vyay uses a **monotonic counter** instead, which guarantees every open request is unique and can never bail out silently.
 
 ```tsx
 openSheet(<IdentityQr value={inviteLink} />, {
@@ -97,127 +78,145 @@ openSheet(<IdentityQr value={inviteLink} />, {
 });
 ```
 
-### Why this approach?
+**Why:**
 
-- Single BottomSheet instance
-- No prop drilling
-- Accessible from anywhere
-- Eliminates duplicate sheet implementations
-- Prevents stale state bugs
-- Keeps screens lightweight
+- One sheet instance for the whole app
+- No prop drilling — callable from anywhere
+- Screens stay lightweight; they own no sheet state
+- Immune to stale-state bugs by construction
 
-> **Note:** Sheet content is rendered as a detached snapshot. Interactive sheet components should own their own local state instead of relying on parent re-renders.
+> **Note:** Sheet content is a detached snapshot. Interactive sheet components should own their local state rather than relying on parent re-renders.
 
 ---
 
-# Getting Started
+## 🏗 Architecture
 
-## 1. Clone the repository
+**Routing** — File-based via Expo Router. Route groups separate the auth flow, the tab navigator, and the group stack. The root layout owns fonts, the splash gate, and the silent-login redirect, so no screen has to reason about auth state.
 
-```bash
-git clone <repository-url>
-cd vyay
+**State** — Split by ownership. **Zustand** for client state (session, theme, sheet); **TanStack Query** for server state (fetching, caching, invalidation). Keeping them separate stops request lifecycle from tangling with local UI flags — a common source of stale-cache bugs.
+
+**Forms** — `react-hook-form` for state, `zod` for schemas, shared `FormInput` / `FormButton` primitives. Validation rules live in one place.
+
+**Networking** — A single `ApiHelper` wraps fetch with base-URL resolution, auth headers, and refresh-token retry. No screen builds a request by hand.
+
+---
+
+## 📁 Project Structure
+
+```text
+app/
+├── (auth)/                Login flow
+├── (tabs)/                Home · Friends · Account
+├── (groupDetail)/         Group detail + photo view
+└── _layout.tsx            Root layout
+                             • Font loading
+                             • Splash handling
+                             • Silent login
+                             • Global SheetHost
+
+components/
+├── account/               Identity card, QR, logout + confirm sheet
+├── home/                  Balance, category breakdown, recent expenses, FAB
+├── friends/               Friend + group cards, tab switcher
+├── custom/BottomSheet/    SheetHost — the app's single sheet instance
+└── ui/                    FormInput, FormButton, tab bar primitives
+
+store/
+├── authStore.ts           Session
+├── themeStore.ts          Theme + token resolution
+└── sheetStore.ts          Global sheet control
+
+auth/                      Login, Google auth, refresh-token utils
+schemas/                   Zod validation schemas
+constants/                 Colours, spacing, typography, shared styles
+utils/                     API helper, logger
+config/                    URLs, storage keys
 ```
 
-## 2. Install dependencies
+---
+
+## 🚀 Getting Started
+
+**Prerequisites** — Node 20+, [Expo CLI](https://docs.expo.dev/get-started/installation/), and an emulator or a device with Expo Go.
+
+**1. Clone**
+
+```bash
+git clone https://github.com/cychatwani/Vyay-Mobile-App.git
+cd Vyay-Mobile-App
+```
+
+**2. Install**
 
 ```bash
 npm install
 ```
 
-## 3. Configure the backend
+**3. Configure the backend**
 
-Update `config/urls.ts` with your running **VyayCore** instance.
+Point `config/urls.ts` at your running VyayCore instance:
 
 ```ts
-export const CORE_API_BASE_URL = "http://192.168.x.x:8080";
+export const URL_CONFIGS = {
+  CORE_API_BASE_URL: "http://192.168.x.x:8080",
+};
 ```
 
-## 4. Start the app
+**4. Run**
 
 ```bash
 npx expo start
 ```
 
-Run using:
+Then press `a` for Android, `i` for iOS, or scan the QR with Expo Go.
 
-- Android Emulator
-- Physical Android Device
-- iOS Simulator (macOS)
+### Scripts
 
----
-
-# Backend
-
-Vyay communicates with **VyayCore**, a Spring Boot backend responsible for authentication, expense management, settlements, and balance computation.
-
-### Stack
-
-- Spring Boot 3.5
-- Java 21
-- PostgreSQL 18
-- Flyway
-- Hibernate
-- JWT Authentication
-
-### Implemented
-
-- Authentication
-- Groups
-- Members
-- Expenses
-- Settlements
-- Balance Engine
-
-### Planned
-
-- Cloudflare R2 file storage
-- Receipt uploads
-- Group photos
-- Push notifications
-- Offline synchronization
-- OCR receipt scanning
-- Recurring expenses
-- UPI deep-link settlements
+| Command           | Description               |
+| ----------------- | ------------------------- |
+| `npm start`       | Start the Expo dev server |
+| `npm run android` | Build and run on Android  |
+| `npm run ios`     | Build and run on iOS      |
+| `npm run lint`    | Lint the project          |
 
 ---
 
-# Design Principles
+## 🔌 Backend
 
-Vyay is built around a few core principles:
+Vyay talks to **VyayCore**, a Spring Boot service handling authentication, groups, expenses, balances, and settlements.
+
+**Stack** — Spring Boot 3.5 · Java 21 · PostgreSQL 18 · Flyway · Hibernate · JWT
+
+**Implemented** — Authentication · Groups · Members · Expenses · Settlements · Balance engine
+
+**Planned** — Cloudflare R2 file storage · Receipt uploads · Group photos · Push notifications · Offline sync · OCR receipt scanning · Recurring expenses · UPI deep-link settlements
+
+---
+
+## 🎯 Design Principles
 
 - **Correctness first** — financial data should always be accurate.
 - **Fast interactions** — responsive UI with efficient caching.
 - **Scalable architecture** — clear separation of UI, client state, and server state.
 - **UPI-native** — designed around how users in India actually settle expenses.
-- **Maintainability** — modular components with feature-oriented organization.
+- **Maintainability** — modular, feature-oriented organisation.
 
 ---
 
-# Current Status
+## 🚧 Current Status
 
-🚧 **Active Development**
+**Active development.**
 
-### ✅ Completed
+**Shipped** — Authentication · Design system & theming · Global bottom sheet architecture · Account, home, friends, and group screens · QR identity
 
-- Authentication
-- Group management
-- Expense creation
-- Balance calculations
-- Settlement workflow
-- Global bottom sheet system
-- Modern design system
-
-### 🚀 In Progress
-
-- QR scanning
-- Receipt attachments
-- Notifications
-- Cloudflare R2 integration
-- Offline support
+**In progress** — API integration for groups/expenses/settlements · QR scanning · Receipt attachments · Notifications · Offline support
 
 ---
 
-# License
+## 📄 License
 
-This project is currently under active development and is not yet licensed for public use.
+Under active development; not yet licensed for public use.
+
+<div align="center">
+Built by <a href="https://github.com/cychatwani">Chirag Chatwani</a>
+</div>
