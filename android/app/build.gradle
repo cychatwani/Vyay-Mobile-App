@@ -87,9 +87,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.chirag.chatwani.SplitEasy'
+    namespace 'com.chirag.chatwani.Vyay'
     defaultConfig {
-        applicationId 'com.chirag.chatwani.SplitEasy'
+        applicationId 'com.chirag.chatwani.Vyay'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

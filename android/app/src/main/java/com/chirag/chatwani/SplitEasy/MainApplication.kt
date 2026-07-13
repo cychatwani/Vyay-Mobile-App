@@ -1,4 +1,4 @@
-package com.chirag.chatwani.SplitEasy
+package com.chirag.chatwani.Vyay
 
 import android.app.Application
 import android.content.res.Configuration

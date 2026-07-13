@@ -24,8 +24,8 @@
         <action android:name="android.intent.action.VIEW"/>
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
-        <data android:scheme="spliteasy"/>
-        <data android:scheme="exp+spliteasy"/>
+        <data android:scheme="Vyay"/>
+        <data android:scheme="exp+Vyay"/>
       </intent-filter>
     </activity>
   </application>
