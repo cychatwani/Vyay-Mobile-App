@@ -1,6 +1,5 @@
 // app/(tabs)/_layout.tsx
 import { Tabs, useSegments } from "expo-router";
-import React from "react";
 
 import { TabBar } from "@/components/TabBar";
 import { useColorScheme } from "@/hooks/useColorScheme";
@@ -15,7 +14,6 @@ export default function TabLayout() {
   return (
     <Tabs
       tabBar={(props) => {
-        // Don't render tab bar if in auth screens
         if (inAuthGroup) return null;
         return <TabBar {...props} />;
       }}

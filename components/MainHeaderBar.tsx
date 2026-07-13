@@ -1,36 +1,48 @@
-import { StyleSheet, Text, View } from "react-native";
 import React from "react";
-import { useColors } from "@/store/themeStore";
-import { useAuthStore } from "@/store/authStore";
-import CircularPictureDisplay from "./CircularPictureDisplay";
-import { scale } from "react-native-size-matters";
-import NotificationBell from "./NotificationBell";
+import { View } from "react-native";
+
 import { Dimens } from "@/constants/Dimes";
+import { useAuthStore } from "@/store/authStore";
+import { useColorsV2 } from "@/store/themeStore";
+
+import CircularPictureDisplay from "./CircularPictureDisplay";
+import NotificationBell from "./NotificationBell";
+import Logo from "./custom/Logo";
 
 const MainHeaderBar = () => {
   const { user } = useAuthStore();
-  const colors = useColors();
-  console.log("::", user?.profilePicture);
+  const colors = useColorsV2();
+
   return (
     <View
       style={{
-        paddingHorizontal: Dimens.paddingMarginHorizontal,
+        paddingHorizontal: Dimens.screenH,
+        paddingVertical: Dimens.vSm,
         flexDirection: "row",
+        alignItems: "center",
         justifyContent: "space-between",
       }}
     >
-      {
+      {/* Left */}
+      <Logo size={110} color={colors.text} />
+
+      {/* Right */}
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          gap: Dimens.lg,
+        }}
+      >
+        <NotificationBell count={8} size={25} iconColor={colors.text} />
         <CircularPictureDisplay
           src={user?.profilePicture}
           size={40}
           isEditable={false}
         />
-      }
-      {<NotificationBell count={8} size={25} iconColor={colors.textPrimary} />}
+      </View>
     </View>
   );
 };
 
 export default MainHeaderBar;
-
-const getStyle = StyleSheet.create({});

@@ -1,51 +1,61 @@
-import { Pressable, StyleSheet, Text, View, Platform } from "react-native";
-import React from "react";
-import { useColors } from "@/store/themeStore";
-import { ThemePalette } from "@/constants/Colors";
-import QRCode from "react-native-qrcode-svg";
-import {
-  getCardDefaults,
-  getTitleFontStyle,
-  getSubTitleFontStyle,
-} from "@/constants/Styles";
-import { useAuthStore } from "@/store/authStore";
-import { scale } from "react-native-size-matters";
 import { Feather } from "@expo/vector-icons";
-import { Share } from "react-native";
+import React from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { scale } from "react-native-size-matters";
 
-const SettingsLink = () => {
-  const colors = useColors();
+import { ThemePaletteV2 } from "@/constants/ColorsV2";
+import { FONTS } from "@/constants/Fonts";
+import { getCardV2 } from "@/constants/Styles";
+import { useColorsV2 } from "@/store/themeStore";
+
+type SettingsLinkProps = {
+  label?: string;
+  icon?: React.ComponentProps<typeof Feather>["name"];
+  onPress?: () => void;
+};
+
+const SettingsLink = ({
+  label = "Preferences",
+  icon = "settings",
+  onPress,
+}: SettingsLinkProps) => {
+  const colors = useColorsV2();
   const styles = getStyles(colors);
-  const { user } = useAuthStore();
+
   return (
-    <View style={styles.container}>
-      <View style={{ flexDirection: "row", justifyContent:"space-between", alignItems:"center" }}>
-        <View style={{ flexDirection: "row", justifyContent:"center", alignItems:"center", gap:5, padding:scale(7) }}>
-          <Feather
-            name="settings"
-            size={scale(22)}
-            color={colors.textSecondary}
-          />
-          <Text style={{ ...getSubTitleFontStyle(colors)}}>Preferences</Text>
-        </View>
-        <View style={{ flexDirection: "row", justifyContent:"center", alignItems:"center", gap:5, padding:scale(7) }}>
-          <Feather
-            name="chevron-right"
-            size={scale(22)}
-            color={colors.textSecondary}
-          />
-        </View>
+    <Pressable
+      onPress={onPress}
+      android_ripple={{ color: colors.ripple }}
+      style={({ pressed }) => [styles.container, pressed && { opacity: 0.9 }]}
+    >
+      <View style={styles.left}>
+        <Feather name={icon} size={scale(20)} color={colors.text2} />
+        <Text style={styles.label}>{label}</Text>
       </View>
-    </View>
+      <Feather name="chevron-right" size={scale(20)} color={colors.text3} />
+    </Pressable>
   );
 };
 
 export default SettingsLink;
 
-const getStyles = (colors: ThemePalette) =>
+const getStyles = (colors: ThemePaletteV2) =>
   StyleSheet.create({
     container: {
-      ...getCardDefaults(colors),
-      padding:5
+      ...getCardV2(colors),
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingVertical: scale(14),
+    },
+    left: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: scale(10),
+    },
+    label: {
+      fontFamily: FONTS.medium,
+      fontSize: scale(14),
+      color: colors.text,
     },
   });

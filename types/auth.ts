@@ -1,13 +1,14 @@
 // src/types/auth.ts
-export type AuthType = "GOOGLE" | "REFRESH" | "APPLE";
+export type AuthType = "GOOGLE" | "REFRESH" | "APPLE" | "PASSWORD";
 
 export type UserDetails = {
-  id: string;
+  userId: string;
   firstName: string;
   lastName: string;
   fullName: string;
   profilePicture: string;
   email: string;
+  hasProfile: boolean;
 };
 
 export type AuthResponseData = {

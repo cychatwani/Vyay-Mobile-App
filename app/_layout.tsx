@@ -1,19 +1,21 @@
 // app/_layout.tsx
-import { useFonts } from "expo-font";
-import { useEffect, useRef, useState } from "react";
-import "react-native-reanimated";
-
+import SheetHost from "@/components/custom/BottomSheet/SheetHost";
 import SplashScreen from "@/components/custom/SplashScreen";
 import { useColorScheme } from "@/hooks/useColorScheme";
+import { useFonts } from "expo-font";
 import { Redirect, Slot, useSegments } from "expo-router";
 import * as SplashScreenNative from "expo-splash-screen";
+import { useEffect, useRef, useState } from "react";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import "react-native-reanimated";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { SignInWithRefreshToken } from "@/auth/coreAuth";
 import { getRefreshToken } from "@/auth/refreshTokenUtils";
-import { MenuProvider } from 'react-native-popup-menu';
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
+import { MenuProvider } from "react-native-popup-menu";
 
-
-const MIN_SPLASH_MS = 2500; // 2.5s minimum
+const MIN_SPLASH_MS = 3500;
 
 // Global flag to track if splash has been shown
 let globalSplashShown = false;
@@ -33,15 +35,15 @@ export default function RootLayout() {
   });
 
   const [showSplash, setShowSplash] = useState(!globalSplashShown);
-  const [splashTimerElapsed, setSplashTimerElapsed] = useState(globalSplashShown);
+  const [splashTimerElapsed, setSplashTimerElapsed] =
+    useState(globalSplashShown);
   const [authChecked, setAuthChecked] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   // minimum splash timer
   useEffect(() => {
-    // Skip if splash already shown
     if (globalSplashShown) return;
-    
+
     let mounted = true;
     const t = setTimeout(() => {
       if (mounted) {
@@ -57,10 +59,9 @@ export default function RootLayout() {
 
   // check refresh token + do silent login if present
   useEffect(() => {
-    // Only run once
     if (hasInitialized.current) return;
     hasInitialized.current = true;
-    
+
     let mounted = true;
 
     async function checkAuth() {
@@ -68,13 +69,9 @@ export default function RootLayout() {
         const refreshToken = await getRefreshToken();
         if (refreshToken) {
           console.log("[auth] Found refresh token, trying silent refresh");
-          
-          // Wait for the refresh to complete
           await SignInWithRefreshToken(refreshToken, () => {
             console.log("[auth] Silent refresh successful");
           });
-          
-          // Only set authenticated if we reach here without error
           if (mounted) setIsAuthenticated(true);
         } else {
           console.log("[auth] No refresh token found, must login");
@@ -92,7 +89,7 @@ export default function RootLayout() {
     return () => {
       mounted = false;
     };
-  }, []); // Empty dependency array - only run once
+  }, []);
 
   // hide splash after everything is ready
   useEffect(() => {
@@ -110,38 +107,42 @@ export default function RootLayout() {
     };
   }, [fontsLoaded, splashTimerElapsed, authChecked]);
 
-  // still showing splash
+  // ---- Compute the content, then wrap everything in SafeAreaProvider ----
+
+  let content: React.ReactNode;
+
   if (!fontsLoaded || showSplash) {
-    return <SplashScreen />;
+    content = <SplashScreen />;
+  } else if (!authChecked) {
+    content = null;
+  } else {
+    const inAuthGroup = segments.includes("(auth)");
+
+    if (!isAuthenticated && !inAuthGroup) {
+      content = <Redirect href="/(auth)/login" />;
+    } else if (isAuthenticated && inAuthGroup) {
+      content = <Redirect href="/(tabs)" />;
+    } else {
+      content = (
+        <MenuProvider>
+          <Slot />
+        </MenuProvider>
+      );
+    }
   }
 
-  // Wait for auth check to complete before showing any content
-  if (!authChecked) {
-    return null; // or return <SplashScreen /> if you prefer
-  }
-
-  // redirect logic based on auth state
-  const inAuthGroup = segments.includes("(auth)");
-  
-  console.log("[layout] isAuthenticated:", isAuthenticated, "inAuthGroup:", inAuthGroup, "segments:", segments);
-  
-  // If not authenticated and not already in auth group, redirect to login
-  if (!isAuthenticated && !inAuthGroup) {
-    console.log("[layout] Redirecting to login");
-    return <Redirect href="/(auth)/login" />;
-  }
-  
-  // If authenticated and in auth group, redirect to main app
-  if (isAuthenticated && inAuthGroup) {
-    console.log("[layout] Redirecting to main app");
-    return <Redirect href="/(tabs)" />;
-  }
-
-  console.log("[layout] Rendering Slot");
-  // Allow the route to render - wrapped with MenuProvider
+  // SafeAreaProvider MUST wrap everything so useSafeAreaInsets() returns real
+  // values. Without it, insets are all 0 and content renders under the notch.
   return (
-    <MenuProvider>
-      <Slot />
-    </MenuProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <BottomSheetModalProvider>
+          {content}
+          {/* One global sheet, mounted above the navigator so it can never be
+              remounted by a screen re-render and always paints over the tabs. */}
+          <SheetHost />
+        </BottomSheetModalProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
