@@ -6,9 +6,11 @@ import { logout } from "@/auth/coreAuth";
 import NameCard from "@/components/account/_NameCard";
 import IdentityCard from "@/components/account/IdentityCard";
 import LogoutButton from "@/components/account/LogoutButton";
+import LogoutConfirmSheet from "@/components/account/LogoutConfirmSheet";
 import SettingsLink from "@/components/account/SettingsLink";
 import MainHeaderBar from "@/components/MainHeaderBar";
 import { Dimens } from "@/constants/Dimes";
+import { openSheet } from "@/store/sheetStore";
 import { useColorsV2 } from "@/store/themeStore";
 
 const Account = () => {
@@ -40,7 +42,13 @@ const Account = () => {
         </View>
 
         <View style={styles.gap}>
-          <LogoutButton onPress={logout} />
+          <LogoutButton
+            onPress={() =>
+              openSheet(<LogoutConfirmSheet onConfirm={logout} />, {
+                snapPoints: ["42%"],
+              })
+            }
+          />
         </View>
       </ScrollView>
     </View>

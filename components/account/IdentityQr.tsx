@@ -7,6 +7,8 @@ import { Dimens } from "@/constants/Dimes";
 import { getSubtitleV2, getTitleV2 } from "@/constants/Styles";
 import { useColorsV2 } from "@/store/themeStore";
 
+const QR_SIZE = scale(200);
+
 type IdentityQrProps = {
   value: string;
 };
@@ -23,9 +25,18 @@ export default function IdentityQr({ value }: IdentityQrProps) {
       <View style={styles.qrWrap}>
         <QRCode
           value={value}
-          size={scale(200)}
+          size={QR_SIZE}
           color={colors.text}
           backgroundColor={colors.card}
+          // "H" = ~30% error correction. Required: the centre logo occludes
+          // modules, and the default ("M", ~15%) leaves too little headroom —
+          // the QR would still render but scan unreliably.
+          ecl="H"
+          logo={require("@/assets/brand/vyay-icon-compact.png")}
+          logoSize={QR_SIZE * 0.22}
+          logoBackgroundColor={colors.card}
+          logoMargin={scale(5)}
+          logoBorderRadius={scale(10)}
         />
       </View>
 

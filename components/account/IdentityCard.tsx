@@ -1,14 +1,13 @@
-import { Feather } from "@expo/vector-icons";
-import { useState } from "react";
+import { Feather, Ionicons } from "@expo/vector-icons";
 import { Pressable, Share, StyleSheet, Text, View } from "react-native";
 import { scale } from "react-native-size-matters";
 
-import BottomSheet from "@/components/custom/BottomSheet/BottomSheet";
 import { ThemePaletteV2 } from "@/constants/ColorsV2";
 import { Dimens } from "@/constants/Dimes";
 import { FONTS } from "@/constants/Fonts";
 import { getCardV2, getSubtitleV2, getTitleV2 } from "@/constants/Styles";
 import { useAuthStore } from "@/store/authStore";
+import { openSheet } from "@/store/sheetStore";
 import { useColorsV2 } from "@/store/themeStore";
 import IdentityQr from "./IdentityQr";
 
@@ -16,8 +15,6 @@ const IdentityCard = () => {
   const colors = useColorsV2();
   const styles = getStyles(colors);
   const { user } = useAuthStore();
-
-  const [qrOpen, setQrOpen] = useState(false);
 
   const userId = user?.userId;
   const inviteLink = `https://vyay.app/invite/${userId}`;
@@ -44,9 +41,29 @@ const IdentityCard = () => {
 
       <View style={styles.buttonRow}>
         <Pressable
+          onPress={() =>
+            openSheet(<IdentityQr value={inviteLink} />, {
+              snapPoints: ["60%"],
+            })
+          }
+          android_ripple={{ color: colors.ripple }}
+          style={({ pressed }) => [
+            styles.button,
+            styles.buttonOutline,
+            pressed && { opacity: 0.9 },
+          ]}
+        >
+          <Ionicons
+            name="qr-code-outline"
+            size={scale(18)}
+            color={colors.brand}
+          />
+          <Text style={styles.buttonOutlineLabel}>Show QR</Text>
+        </Pressable>
+
+        <Pressable
           onPress={() => {
-            console.log("[qr] Show QR tapped, opening sheet");
-            setQrOpen(true);
+            // TODO: open the full-screen scanner route
           }}
           android_ripple={{ color: colors.ripple }}
           style={({ pressed }) => [
@@ -55,32 +72,26 @@ const IdentityCard = () => {
             pressed && { opacity: 0.9 },
           ]}
         >
-          <Feather name="maximize" size={scale(18)} color={colors.brand} />
-          <Text style={styles.buttonOutlineLabel}>Show QR</Text>
-        </Pressable>
-
-        <Pressable
-          onPress={shareInviteLink}
-          android_ripple={{ color: colors.ripple }}
-          style={({ pressed }) => [
-            styles.button,
-            styles.buttonPrimary,
-            pressed && { opacity: 0.9 },
-          ]}
-        >
-          <Feather name="send" size={scale(18)} color={colors.white} />
-          <Text style={styles.buttonPrimaryLabel}>Invite link</Text>
+          <Ionicons name="scan-outline" size={scale(18)} color={colors.brand} />
+          <Text style={styles.buttonOutlineLabel}>Scan</Text>
         </Pressable>
       </View>
 
-      <BottomSheet
-        isOpen={qrOpen}
-        onClose={() => setQrOpen(false)}
-        snapPoints={["60%"]}
+      <Pressable
+        onPress={shareInviteLink}
+        android_ripple={{ color: colors.ripple }}
+        style={({ pressed }) => [
+          styles.button,
+          styles.buttonPrimary,
+          styles.buttonFull,
+          pressed && { opacity: 0.9 },
+        ]}
       >
-        <IdentityQr value={inviteLink} />
-      </BottomSheet>
-    </View>
+        <Feather name="send" size={scale(18)} color={colors.white} />
+        <Text style={styles.buttonPrimaryLabel}>Invite link</Text>
+      </Pressable>
+
+   </View>
   );
 };
 
@@ -112,6 +123,11 @@ const getStyles = (colors: ThemePaletteV2) =>
       height: scale(46),
       borderRadius: Dimens.radiusPill,
       overflow: "hidden",
+    },
+    buttonFull: {
+      flex: 0,
+      alignSelf: "stretch",
+      marginTop: scale(12),
     },
     buttonPrimary: {
       backgroundColor: colors.brand,

@@ -1,4 +1,5 @@
 // app/_layout.tsx
+import SheetHost from "@/components/custom/BottomSheet/SheetHost";
 import SplashScreen from "@/components/custom/SplashScreen";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useFonts } from "expo-font";
@@ -135,7 +136,12 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <BottomSheetModalProvider>{content}</BottomSheetModalProvider>
+        <BottomSheetModalProvider>
+          {content}
+          {/* One global sheet, mounted above the navigator so it can never be
+              remounted by a screen re-render and always paints over the tabs. */}
+          <SheetHost />
+        </BottomSheetModalProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
