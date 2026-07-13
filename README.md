@@ -1,50 +1,223 @@
-# Welcome to your Expo app 👋
+# Vyay
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+> **A UPI-first expense splitting app built for India.**  
+> Split expenses with friends, roommates, couples, and travel groups—without spreadsheets, manual calculations, or payment confusion.
 
-## Get started
+Vyay is designed to make shared finances effortless by combining an intuitive mobile experience with a backend built for correctness, scalability, and future offline support.
 
-1. Install dependencies
+---
 
-   ```bash
-   npm install
-   ```
+## ✨ Features
 
-2. Start the app
+- 💸 Create groups for trips, roommates, couples, events, and more
+- 🧾 Add and split expenses using multiple split methods
+- ⚖️ Real-time balance calculation
+- 🤝 Settlement workflow between members
+- 📱 UPI-first experience designed for Indian users
+- 🎨 Modern Material-inspired UI with light & dark themes
+- 🔐 Secure JWT authentication with refresh tokens
+- 📷 QR identity generation _(scanner integration coming soon)_
 
-   ```bash
-   npx expo start
-   ```
+---
 
-In the output, you'll find options to open the app in a
+# Tech Stack
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Mobile
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+- Expo SDK 53
+- React Native 0.79
+- Expo Router
+- TypeScript
 
-## Get a fresh project
+## State Management
 
-When you're ready, run:
+- Zustand
+- TanStack Query
+- react-hook-form
+- Zod
 
-```bash
-npm run reset-project
+## UI
+
+- @gorhom/bottom-sheet
+- react-native-qrcode-svg
+- react-native-reanimated
+- react-native-gesture-handler
+- FlashList
+- Expo Vector Icons
+
+## Camera
+
+- react-native-vision-camera _(integrated, QR scanning coming soon)_
+
+---
+
+# Project Structure
+
+```text
+app/
+├── (auth)/                Authentication screens
+├── (tabs)/                Home, Friends, Account
+├── (groupDetail)/         Group detail flow
+└── _layout.tsx            Root layout
+                            • Font loading
+                            • Splash handling
+                            • Silent login
+                            • Global SheetHost
+
+components/
+├── account/               Account components
+├── custom/
+│   └── BottomSheet/       Global SheetHost
+└── ui/                    Shared UI components
+
+store/
+├── authStore.ts
+├── themeStore.ts
+└── sheetStore.ts
+
+constants/
+├── ColorsV2.ts
+└── Styles.ts
+
+config/
+└── urls.ts                Backend configuration
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+---
 
-## Learn more
+# Global Bottom Sheet Architecture
 
-To learn more about developing your project with Expo, look at the following resources:
+Instead of rendering a `BottomSheetModal` inside every screen, Vyay uses a **single global sheet host** mounted above the navigation tree.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+This solves an issue where imperative bottom sheets can become stuck when driven by a boolean state (`isOpen`). Rather than toggling visibility, the app uses a monotonic counter that guarantees every open request is unique.
 
-## Join the community
+```tsx
+openSheet(<IdentityQr value={inviteLink} />, {
+  snapPoints: ["60%"],
+});
+```
 
-Join our community of developers creating universal apps.
+### Why this approach?
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- Single BottomSheet instance
+- No prop drilling
+- Accessible from anywhere
+- Eliminates duplicate sheet implementations
+- Prevents stale state bugs
+- Keeps screens lightweight
+
+> **Note:** Sheet content is rendered as a detached snapshot. Interactive sheet components should own their own local state instead of relying on parent re-renders.
+
+---
+
+# Getting Started
+
+## 1. Clone the repository
+
+```bash
+git clone <repository-url>
+cd vyay
+```
+
+## 2. Install dependencies
+
+```bash
+npm install
+```
+
+## 3. Configure the backend
+
+Update `config/urls.ts` with your running **VyayCore** instance.
+
+```ts
+export const CORE_API_BASE_URL = "http://192.168.x.x:8080";
+```
+
+## 4. Start the app
+
+```bash
+npx expo start
+```
+
+Run using:
+
+- Android Emulator
+- Physical Android Device
+- iOS Simulator (macOS)
+
+---
+
+# Backend
+
+Vyay communicates with **VyayCore**, a Spring Boot backend responsible for authentication, expense management, settlements, and balance computation.
+
+### Stack
+
+- Spring Boot 3.5
+- Java 21
+- PostgreSQL 18
+- Flyway
+- Hibernate
+- JWT Authentication
+
+### Implemented
+
+- Authentication
+- Groups
+- Members
+- Expenses
+- Settlements
+- Balance Engine
+
+### Planned
+
+- Cloudflare R2 file storage
+- Receipt uploads
+- Group photos
+- Push notifications
+- Offline synchronization
+- OCR receipt scanning
+- Recurring expenses
+- UPI deep-link settlements
+
+---
+
+# Design Principles
+
+Vyay is built around a few core principles:
+
+- **Correctness first** — financial data should always be accurate.
+- **Fast interactions** — responsive UI with efficient caching.
+- **Scalable architecture** — clear separation of UI, client state, and server state.
+- **UPI-native** — designed around how users in India actually settle expenses.
+- **Maintainability** — modular components with feature-oriented organization.
+
+---
+
+# Current Status
+
+🚧 **Active Development**
+
+### ✅ Completed
+
+- Authentication
+- Group management
+- Expense creation
+- Balance calculations
+- Settlement workflow
+- Global bottom sheet system
+- Modern design system
+
+### 🚀 In Progress
+
+- QR scanning
+- Receipt attachments
+- Notifications
+- Cloudflare R2 integration
+- Offline support
+
+---
+
+# License
+
+This project is currently under active development and is not yet licensed for public use.

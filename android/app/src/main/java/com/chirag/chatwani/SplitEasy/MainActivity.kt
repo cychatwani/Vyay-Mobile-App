@@ -1,4 +1,4 @@
-package com.chirag.chatwani.SplitEasy
+package com.chirag.chatwani.Vyay
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build

@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "SplitEasy",
-    "slug": "SplitEasy",
+    "name": "Vyay",
+    "slug": "Vyay",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/splash-icon.png",
-    "scheme": "spliteasy",
+    "scheme": "Vyay",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -17,7 +17,7 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.chirag.chatwani.SplitEasy"
+      "package": "com.chirag.chatwani.Vyay"
     },
     "plugins": [
       "expo-router",
