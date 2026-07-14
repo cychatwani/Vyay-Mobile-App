@@ -30,7 +30,13 @@ export default function TabLayout() {
       <Tabs.Screen
         name="friends"
         options={{
-          title: "Friends",
+          title: "Contacts",
+        }}
+      />
+      <Tabs.Screen
+        name="groups"
+        options={{
+          title: "Groups",
         }}
       />
       <Tabs.Screen

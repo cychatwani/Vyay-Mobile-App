@@ -25,3 +25,36 @@ export type AuthResponse = {
   errorCode: string | null;
   data: AuthResponseData;
 };
+
+/** Mirror of the backend's RegisterResponseDTO. */
+export type RegisterResponseData = {
+  email: string;
+  verificationRequired: boolean;
+  verificationType: "EMAIL_OTP" | "EMAIL_LINK";
+  nextStep: "VERIFY_OTP" | "VERIFY_LINK" | "LOGIN";
+  verificationId: string;
+  expiresAt: string;
+  resendAvailableAt: string;
+  message: string;
+};
+
+export type RegisterResponse = {
+  code: number;
+  message: string | null;
+  errorCode: string | null;
+  data: RegisterResponseData;
+};
+
+/** Mirror of the backend's OtpChallenge (returned by resend-otp). */
+export type OtpChallenge = {
+  verificationId: string;
+  expiresAt: string;
+  resendAvailableAt: string;
+};
+
+export type ResendOtpResponse = {
+  code: number;
+  message: string | null;
+  errorCode: string | null;
+  data: OtpChallenge;
+};

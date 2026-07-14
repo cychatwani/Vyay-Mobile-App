@@ -1,23 +1,25 @@
-import { ThemePalette } from "@/constants/Colors";
+import { ThemePaletteV2 } from "@/constants/ColorsV2";
 import { FONTS } from "@/constants/Fonts";
-import { useColors } from "@/store/themeStore";
+import { useColorsV2 } from "@/store/themeStore";
 import { Feather } from "@expo/vector-icons";
-import React, { useState, useEffect } from "react";
+import * as Haptics from "expo-haptics";
+import { LinearGradient } from "expo-linear-gradient";
+import React, { useEffect, useState } from "react";
 import {
+  LayoutChangeEvent,
+  Pressable,
   StyleSheet,
   Text,
   View,
-  Pressable,
-  LayoutChangeEvent,
 } from "react-native";
-import { scale } from "react-native-size-matters";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
 } from "react-native-reanimated";
-import * as Haptics from "expo-haptics";
-import { LinearGradient } from "expo-linear-gradient";
+import { scale } from "react-native-size-matters";
+
+import { shade } from "@/utils/colorUtils";
 
 export interface TabConfig<T extends string> {
   value: T;
@@ -34,71 +36,93 @@ interface GenericTabSwitcherProps<T extends string> {
   variant?: TabVariant; // "unified" or "separated"
 }
 
+/* ------------------------------------------------------------------ *
+ * Geometry — one source of truth so every radius/inset stays coherent.
+ *
+ * The concentric-radius rule: innerRadius = outerRadius − inset.
+ * 44 tall capsule (radius 22), 4pt inset → 36 tall pill (radius 18),
+ * which is itself a perfect capsule. Corners look "intentional" because
+ * they are mathematically related, not eyeballed.
+ * ------------------------------------------------------------------ */
+const TRACK_HEIGHT = scale(44); // Apple minimum touch target
+const TRACK_INSET = scale(4);
+const TRACK_RADIUS = TRACK_HEIGHT / 2;
+const PILL_RADIUS = TRACK_RADIUS - TRACK_INSET;
+
+/** Spring tuned for iOS-feel: fast settle, one barely-there overshoot. */
+const PILL_SPRING = { damping: 24, stiffness: 300, mass: 0.8 };
+
 function GenericTabSwitcher<T extends string>({
   tabs,
   activeTab,
   onTabChange,
   variant = "unified",
 }: GenericTabSwitcherProps<T>) {
-  const colors = useColors();
-  const styles = getStyles(colors, variant);
+  const colors = useColorsV2();
+  const styles = getStyles(colors);
 
-  const P = scale(3);
+  /**
+   * Soft top-light on the brand colour: +7% white at the top edge fading to
+   * −5% black at the bottom. A luminance shift, not a hue transition — the
+   * pill reads as a lit surface rather than a "gradient", and it stays
+   * correct in dark mode because it derives from the active brand token.
+   */
+  const pillGradient = [shade(colors.brand, 0.07), shade(colors.brand, -0.05)] as const;
+
   const [tabWidth, setTabWidth] = useState<number>(0);
 
   const onContainerLayout = (e: LayoutChangeEvent) => {
     const width = e.nativeEvent.layout.width;
-    const singleTabWidth = (width - P * 2) / tabs.length;
-    setTabWidth(singleTabWidth);
+    setTabWidth((width - TRACK_INSET * 2) / tabs.length);
   };
 
   const activeIndex = tabs.findIndex((tab) => tab.value === activeTab);
   const translateX = useSharedValue(activeIndex >= 0 ? activeIndex : 0);
 
   useEffect(() => {
-    const newIndex = tabs.findIndex((tab) => tab.value === activeTab);
-    if (newIndex >= 0) {
-      translateX.value = withSpring(newIndex, {
-        damping: 20,
-        stiffness: 200,
-      });
+    if (activeIndex >= 0) {
+      translateX.value = withSpring(activeIndex, PILL_SPRING);
     }
-  }, [activeTab, tabs]);
+    // Keyed on the resolved index, not the tabs array identity — call sites
+    // pass inline arrays, and re-running the spring every parent render
+    // (even to the same value) is wasted work.
+  }, [activeIndex, translateX]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value * tabWidth }],
   }));
 
   const handleTabChange = (tab: T) => {
+    // Re-pressing the active segment is a no-op: no haptic, no callback.
+    // Feedback on a press that changes nothing reads as a glitch.
+    if (tab === activeTab) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onTabChange(tab);
   };
 
-  // Render unified variant (single card with sliding background)
+  // Unified variant — single track with the sliding lit pill.
   if (variant === "unified") {
     return (
       <View style={styles.container}>
-        <View style={styles.tabContainer} onLayout={onContainerLayout}>
-          // In the unified variant render section, update this part:
+        <View
+          style={styles.track}
+          onLayout={onContainerLayout}
+          accessibilityRole="tablist"
+        >
           {tabWidth > 0 && (
             <Animated.View
-              style={[
-                styles.activeBackground,
-                {
-                  width: tabWidth,
-                  left: scale(3),
-                  top: scale(3),
-                  bottom: scale(3), // This should now work properly
-                },
-                animatedStyle,
-              ]}
+              style={[styles.pill, { width: tabWidth }, animatedStyle]}
             >
-              <LinearGradient
-                colors={colors.primaryGradient as any}
-                style={styles.gradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-              />
+              {/* Shadow lives on the outer node; the clip lives inside.
+                  overflow:"hidden" would swallow the elevation shadow. */}
+              <View style={styles.pillClip}>
+                <LinearGradient
+                  colors={pillGradient}
+                  style={styles.gradient}
+                  start={{ x: 0.5, y: 0 }}
+                  end={{ x: 0.5, y: 1 }}
+                />
+              </View>
             </Animated.View>
           )}
           {tabs.map((tab) => {
@@ -108,12 +132,15 @@ function GenericTabSwitcher<T extends string>({
                 key={tab.value}
                 style={styles.tab}
                 onPress={() => handleTabChange(tab.value)}
+                accessibilityRole="tab"
+                accessibilityLabel={tab.label}
+                accessibilityState={{ selected: isActive }}
               >
                 {tab.icon !== "none" && (
                   <Feather
                     name={tab.icon}
-                    size={scale(18)}
-                    color={isActive ? "#FFFFFF" : colors.textSecondary}
+                    size={scale(15)}
+                    color={isActive ? colors.white : colors.text2}
                   />
                 )}
                 <Text
@@ -129,9 +156,9 @@ function GenericTabSwitcher<T extends string>({
     );
   }
 
-  // Render separated variant (individual cards)
+  // Separated variant — individual cards, same design language.
   return (
-    <View style={styles.separatedContainer}>
+    <View style={styles.separatedContainer} accessibilityRole="tablist">
       {tabs.map((tab) => {
         const isActive = activeTab === tab.value;
         return (
@@ -139,12 +166,15 @@ function GenericTabSwitcher<T extends string>({
             key={tab.value}
             style={[styles.separatedTab, isActive && styles.separatedTabActive]}
             onPress={() => handleTabChange(tab.value)}
+            accessibilityRole="tab"
+            accessibilityLabel={tab.label}
+            accessibilityState={{ selected: isActive }}
           >
             {tab.icon !== "none" && (
               <Feather
                 name={tab.icon}
-                size={scale(18)}
-                color={isActive ? "#FFFFFF" : colors.textSecondary}
+                size={scale(15)}
+                color={isActive ? colors.white : colors.text2}
               />
             )}
             <Text
@@ -165,91 +195,113 @@ function GenericTabSwitcher<T extends string>({
 
 export default GenericTabSwitcher;
 
-const getStyles = (colors: ThemePalette, variant: TabVariant) =>
+const getStyles = (colors: ThemePaletteV2) =>
   StyleSheet.create({
-    // Unified variant styles (keep existing)
+    /* ------------------------------ unified ------------------------------ */
     container: {
-      paddingHorizontal: scale(8),
+      paddingHorizontal: scale(12),
       marginTop: scale(10),
     },
-    tabContainer: {
+    track: {
       flexDirection: "row",
+      height: TRACK_HEIGHT,
       backgroundColor: colors.card,
-      borderRadius: scale(25),
-      padding: scale(3), // Changed back to 3
+      borderRadius: TRACK_RADIUS,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.border,
+      padding: TRACK_INSET,
       position: "relative",
-      shadowColor: colors.primaryShadow,
-      shadowOffset: { width: 0, height: scale(2) },
-      shadowOpacity: 0.08,
-      shadowRadius: scale(4),
-      elevation: 2,
-      overflow: "hidden",
-      minHeight: scale(44),
+      // Ambient, not cast: big radius + low opacity reads as soft ground
+      // shadow. Tight dark shadows are what make controls look "generated".
+      shadowColor: "#0D0E13",
+      shadowOffset: { width: 0, height: scale(3) },
+      shadowOpacity: 0.05,
+      shadowRadius: scale(10),
+      elevation: 1,
     },
-    activeBackground: {
+    pill: {
       position: "absolute",
-      borderRadius: scale(22), // Slightly larger to match
+      left: TRACK_INSET,
+      top: TRACK_INSET,
+      bottom: TRACK_INSET,
+      borderRadius: PILL_RADIUS,
+      // Brand-tinted lift: the pill glows faintly with its own colour
+      // instead of dropping a grey Material key shadow.
+      shadowColor: colors.brand,
+      shadowOffset: { width: 0, height: scale(2) },
+      shadowOpacity: 0.28,
+      shadowRadius: scale(5),
+      elevation: 3,
+    },
+    pillClip: {
+      flex: 1,
+      borderRadius: PILL_RADIUS,
       overflow: "hidden",
     },
     gradient: {
       flex: 1,
-      width: "100%",
-      height: "100%",
     },
     tab: {
       flex: 1,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
-      gap: scale(5),
+      gap: scale(6),
       zIndex: 1,
     },
     tabText: {
       fontSize: scale(13),
       fontFamily: FONTS.medium,
-      color: colors.textSecondary,
+      letterSpacing: scale(0.2),
+      color: colors.text2,
     },
     activeTabText: {
-      color: "#FFFFFF",
-      fontFamily: FONTS.medium,
+      color: colors.white,
+      // Same weight as inactive — the state change is carried entirely by
+      // colour and the pill. Bumping weight makes labels shift width as the
+      // pill arrives, which reads as a layout twitch.
     },
 
-    // Separated variant styles - UPDATED
+    /* ----------------------------- separated ----------------------------- */
     separatedContainer: {
       flexDirection: "row",
-      paddingHorizontal: scale(8),
+      paddingHorizontal: scale(12),
       marginTop: scale(10),
-      gap: scale(5),
+      gap: scale(8),
     },
     separatedTab: {
       flex: 1,
-      flexDirection: "row", // Changed from column to row
+      flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
-      gap: scale(3),
-      paddingVertical: scale(5), // Reduced
-      paddingHorizontal: scale(8), // Added horizontal padding
+      gap: scale(6),
+      height: scale(40),
+      paddingHorizontal: scale(10),
       backgroundColor: colors.card,
-      borderRadius: scale(13), // More pill-shaped
-      shadowColor: colors.primaryShadow,
-      shadowOffset: { width: 0, height: scale(1) },
-      shadowOpacity: 0.05,
-      shadowRadius: scale(2),
+      borderRadius: scale(20),
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.border,
+      shadowColor: "#0D0E13",
+      shadowOffset: { width: 0, height: scale(2) },
+      shadowOpacity: 0.04,
+      shadowRadius: scale(6),
       elevation: 1,
-      borderWidth: 0, // Removed border
     },
     separatedTabActive: {
-      backgroundColor: colors.main,
-      shadowOpacity: 0.15,
+      backgroundColor: colors.brand,
+      borderColor: colors.brand,
+      shadowColor: colors.brand,
+      shadowOpacity: 0.28,
+      shadowRadius: scale(5),
       elevation: 3,
     },
     separatedTabText: {
-      fontSize: scale(14), // Slightly larger
+      fontSize: scale(13),
       fontFamily: FONTS.medium,
-      color: colors.textSecondary,
+      letterSpacing: scale(0.2),
+      color: colors.text2,
     },
     separatedTabTextActive: {
-      color: "#FFFFFF", // White text on active
-      fontFamily: FONTS.medium,
+      color: colors.white,
     },
   });

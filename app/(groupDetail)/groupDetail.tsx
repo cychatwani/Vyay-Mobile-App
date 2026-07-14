@@ -1,32 +1,33 @@
-import { Stack } from "expo-router";
-import SafeView from "@/components/custom/SafeView/SafeView";
-import { View, Text } from "react-native";
-import { useColors } from "@/store/themeStore";
 import CustomHeader from "@/components/custom/CustomHeader";
-import GroupPhotoDisplay from "./GroupPhotoDisplay";
-import GenericTabSwitcher, { TabConfig } from "@/components/custom/GenericTabSwitcher/GenericTabSwitcher";
-import { useState } from "react";
 import ExpenseGraph from "@/components/custom/ExpenseGraph/ExpenseGraph";
+import GenericTabSwitcher, {
+  TabConfig,
+} from "@/components/custom/GenericTabSwitcher/GenericTabSwitcher";
+import SafeView from "@/components/custom/SafeView/SafeView";
+import { useColors } from "@/store/themeStore";
+import { useState } from "react";
+import { Text, View } from "react-native";
+import GroupPhotoDisplay from "./GroupPhotoDisplay";
 
 export default function GroupDetail() {
   const colors = useColors();
-  
-  type GroupDetailTab = 'expenses' | 'balances' | 'totals' | 'info';
-  const [activeTab, setActiveTab] = useState<GroupDetailTab>('expenses');
+
+  type GroupDetailTab = "activity" | "balances" | "totals" | "info";
+  const [activeTab, setActiveTab] = useState<GroupDetailTab>("activity");
 
   const groupDetailTabs: TabConfig<GroupDetailTab>[] = [
-    { value: 'expenses', label: 'Expenses', icon: 'credit-card' },
-    { value: 'balances', label: 'Balances', icon: 'pie-chart' },
-    { value: 'totals', label: 'Totals', icon: 'dollar-sign' },
+    { value: "activity", label: "Activity", icon: "clock" },
+    { value: "balances", label: "Balances", icon: "pie-chart" },
+    { value: "totals", label: "Totals", icon: "dollar-sign" },
   ];
 
   const balanceData = [
-    { name: "Andrew Ainsley", amount: 6420.50 },
-    { name: "Charlotte Hanlin", amount: -728.50 },
-    { name: "Darron Kulikowski", amount: -586.50 },
-    { name: "Kristin Watson", amount: 586.50 },
-    { name: "Joseph Thomas", amount: 728.50 },
-    { name: "Maryland Winkles", amount: -6420.50 },
+    { name: "Andrew Ainsley", amount: 6420.5 },
+    { name: "Charlotte Hanlin", amount: -728.5 },
+    { name: "Darron Kulikowski", amount: -586.5 },
+    { name: "Kristin Watson", amount: 586.5 },
+    { name: "Joseph Thomas", amount: 728.5 },
+    { name: "Maryland Winkles", amount: -6420.5 },
   ];
 
   return (
@@ -36,7 +37,7 @@ export default function GroupDetail() {
       statusBarStyle="dark-content"
     >
       <CustomHeader title="Goa Trip 2024" />
-      
+
       {/* Center only the photo */}
       <View
         style={{
@@ -57,16 +58,14 @@ export default function GroupDetail() {
 
       {/* Content based on active tab */}
       <View style={{ flex: 1, padding: 16 }}>
-        {activeTab === 'expenses' && (
-           <Text style={{ color: colors.textPrimary }}>expenses</Text>
+        {activeTab === "expenses" && (
+          <Text style={{ color: colors.textPrimary }}>expenses</Text>
         )}
-        {activeTab === 'balances' && (
-          <ExpenseGraph expenses={balanceData} />
-        )}
-        {activeTab === 'totals' && (
+        {activeTab === "balances" && <ExpenseGraph expenses={balanceData} />}
+        {activeTab === "totals" && (
           <Text style={{ color: colors.textPrimary }}>Totals & Stats</Text>
         )}
-        {activeTab === 'info' && (
+        {activeTab === "info" && (
           <Text style={{ color: colors.textPrimary }}>Group Info</Text>
         )}
       </View>
