@@ -67,7 +67,10 @@ function GenericTabSwitcher<T extends string>({
    * pill reads as a lit surface rather than a "gradient", and it stays
    * correct in dark mode because it derives from the active brand token.
    */
-  const pillGradient = [shade(colors.brand, 0.07), shade(colors.brand, -0.05)] as const;
+  const pillGradient = [
+    shade(colors.brand, 0.07),
+    shade(colors.brand, -0.05),
+  ] as const;
 
   const [tabWidth, setTabWidth] = useState<number>(0);
 
