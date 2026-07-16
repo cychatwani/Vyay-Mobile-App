@@ -5,6 +5,7 @@ import CustomHeader from "@/components/custom/CustomHeader";
 import GenericTabSwitcher, {
   TabConfig,
 } from "@/components/custom/GenericTabSwitcher/GenericTabSwitcher";
+import GroupTimeline from "@/components/custom/GroupTimeline/GroupTimeline";
 import MemberBalances from "@/components/custom/MemberBalances/MemberBalances";
 import type { MemberBalance } from "@/components/custom/MemberBalances/types";
 import SafeView from "@/components/custom/SafeView/SafeView";
@@ -15,6 +16,7 @@ import { useColors } from "@/store/themeStore";
 import { useState } from "react";
 import { ScrollView, Text, View } from "react-native";
 import GroupPhotoDisplay from "./GroupPhotoDisplay";
+import { MOCK_TIMELINE } from "./mockTimeline";
 
 /* ------------------------------------------------------------------ *
  * Placeholder data until the group API is wired in.
@@ -472,10 +474,16 @@ export default function GroupDetail() {
         variant="unified"
       />
 
-      {/* Content based on active tab */}
-      <View style={{ flex: 1, padding: 16 }}>
+      {/* Content based on active tab. The Activity timeline manages its own
+          gutters (its FlashList scrolls edge to edge, and a composer will be
+          pinned under it later), so the wrapper padding only applies to the
+          other tabs. */}
+      <View style={{ flex: 1, padding: activeTab === "activity" ? 0 : 16 }}>
         {activeTab === "activity" && (
-          <Text style={{ color: colors.textPrimary }}>expenses</Text>
+          <GroupTimeline
+            items={MOCK_TIMELINE}
+            currentUserId={DEMO_CURRENT_USER_ID}
+          />
         )}
         {activeTab === "balances" && (
           <ScrollView
