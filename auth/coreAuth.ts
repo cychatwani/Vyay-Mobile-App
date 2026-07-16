@@ -170,7 +170,7 @@ export const logout = async () => {
  * NOTE: Do NOT call Zustand React hooks (useAuthStore(...)) from plain functions.
  * Use the imperative API useAuthStore.getState() to access setters without relying on React render rules.
  */
-const authenticateUser = async (
+export const authenticateUser = async (
   accessToken: string,
   refreshToken: string,
   userDetails: UserDetails,
