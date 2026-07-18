@@ -1,21 +1,37 @@
-import ActionFilterChips, {
-  ActionFilterChip,
-} from "@/components/custom/ActionFilterChips/ActionFilterChips";
 import CustomHeader from "@/components/custom/CustomHeader";
 import GenericTabSwitcher, {
   TabConfig,
 } from "@/components/custom/GenericTabSwitcher/GenericTabSwitcher";
+import GroupBottomComposer from "@/components/custom/GroupComposer/GroupBottomComposer";
+import GroupHeaderIdentity from "@/components/custom/GroupHeader/GroupHeaderIdentity";
 import GroupTimeline from "@/components/custom/GroupTimeline/GroupTimeline";
+import type {
+  MessageEvent,
+  TimelineActor,
+  TimelineItem,
+} from "@/components/custom/GroupTimeline/types";
+import HistoricalTotalsCard from "@/components/custom/GroupTotals/HistoricalTotalsCard";
+import HistoricalTotalsSheet, {
+  HISTORICAL_TOTALS_SNAP,
+  type PeriodTotal,
+} from "@/components/custom/GroupTotals/HistoricalTotalsSheet";
 import MemberBalances from "@/components/custom/MemberBalances/MemberBalances";
 import type { MemberBalance } from "@/components/custom/MemberBalances/types";
 import SafeView from "@/components/custom/SafeView/SafeView";
 import SettlementSuggestions from "@/components/custom/SettlementSuggestions/SettlementSuggestions";
 import type { SettlementSuggestion } from "@/components/custom/SettlementSuggestions/types";
 import { Dimens } from "@/constants/Dimes";
+import { openSheet } from "@/store/sheetStore";
 import { useColors } from "@/store/themeStore";
-import { useState } from "react";
-import { ScrollView, Text, View } from "react-native";
-import GroupPhotoDisplay from "./GroupPhotoDisplay";
+import { useCallback, useRef, useState } from "react";
+import {
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
+import { useSharedValue, withTiming } from "react-native-reanimated";
 import { MOCK_TIMELINE } from "./mockTimeline";
 
 /* ------------------------------------------------------------------ *
@@ -405,47 +421,97 @@ const MOCK_SETTLEMENT_PLAN: SettlementSuggestion[] = [
 /** Charlotte Hanlin — stand-in viewer until membership comes from the API. */
 const DEMO_CURRENT_USER_ID = "u2";
 
+/** Same person as an actor, so locally-sent comments render as "You". */
+const DEMO_CURRENT_USER: TimelineActor = {
+  id: DEMO_CURRENT_USER_ID,
+  name: "Charlotte Hanlin",
+  avatarUrl: "https://i.pravatar.cc/150?img=47",
+};
+
 /** Raw pairwise debts before simplification — the API sends this for real groups. */
 const DEMO_ORIGINAL_DEBT_COUNT = 74;
 
+/** Stand-in historical spend until the totals API is wired in. */
+const DEMO_HISTORICAL_GRAND_TOTAL = 184320.75;
+const DEMO_HISTORICAL_PERIODS: readonly PeriodTotal[] = [
+  { id: "p-thismonth", label: "This month", amount: 21450.0 },
+  { id: "p-lastmonth", label: "Last month", amount: 38975.5 },
+  { id: "p-2024-q1", label: "Jan – Mar 2024", amount: 62890.25 },
+  { id: "p-2023-q4", label: "Oct – Dec 2023", amount: 41005.0 },
+  { id: "p-older", label: "Before Oct 2023", amount: 20000.0 },
+];
+
 export default function GroupDetail() {
   const colors = useColors();
-  const [selectedRange, setSelectedRange] = useState<DateRangeId>("1w");
-  const [status, setStatus] = useState<StatusId>("all");
 
-  type GroupDetailTab = "activity" | "balances" | "totals" | "info";
+  type GroupDetailTab = "activity" | "balances" | "info";
   const [activeTab, setActiveTab] = useState<GroupDetailTab>("activity");
+
+  // Timeline is state (not the raw mock) so comments sent from the
+  // composer land in the stream immediately. The API swaps in here later.
+  const [timeline, setTimeline] = useState<TimelineItem[]>(MOCK_TIMELINE);
+
+  // Tabs recede as the timeline is scrolled: full opacity at the top,
+  // easing down to a quiet background level once the user scrolls in.
+  const tabsOpacity = useSharedValue(1);
+  const wasScrolled = useRef(false);
+
+  const handleTimelineScroll = useCallback(
+    (offsetY: number) => {
+      // Inverted list: offset grows as you move into history. Cross a small
+      // threshold and the tabs settle back; return near the top and they
+      // come forward again. The ref gates the animation so we only spring
+      // on an actual state change, not every scroll frame.
+      const scrolled = offsetY > 24;
+      if (scrolled !== wasScrolled.current) {
+        wasScrolled.current = scrolled;
+        tabsOpacity.value = withTiming(scrolled ? 0.45 : 1, {
+          duration: 220,
+        });
+      }
+    },
+    [tabsOpacity],
+  );
+
+  const handleSendComment = useCallback((text: string) => {
+    const message: MessageEvent = {
+      kind: "message",
+      id: `local-${Date.now()}`,
+      createdAt: Date.now(),
+      sender: DEMO_CURRENT_USER,
+      text,
+    };
+    setTimeline((prev) => [...prev, message]);
+  }, []);
+
+  const handleAddExpense = useCallback(() => {
+    // TODO: navigate to the add-expense flow once that screen exists.
+    console.log("Add Expense selected");
+  }, []);
+
+  const handleRecordSettlement = useCallback(() => {
+    // TODO: navigate to the record-settlement flow once that screen exists.
+    console.log("Record Settlement selected");
+  }, []);
+
+  const handleOpenGroupInfo = useCallback(() => {
+    // TODO: navigate to the group info screen once it exists.
+    console.log("Group header pressed — group info screen comes later");
+  }, []);
+
+  const handleOpenHistoricalTotals = useCallback(() => {
+    openSheet(
+      <HistoricalTotalsSheet
+        grandTotal={DEMO_HISTORICAL_GRAND_TOTAL}
+        periods={DEMO_HISTORICAL_PERIODS}
+      />,
+      { snapPoints: [HISTORICAL_TOTALS_SNAP] },
+    );
+  }, []);
 
   const groupDetailTabs: TabConfig<GroupDetailTab>[] = [
     { value: "activity", label: "Activity", icon: "clock" },
     { value: "balances", label: "Balances", icon: "pie-chart" },
-    { value: "totals", label: "Totals", icon: "dollar-sign" },
-  ];
-
-  type StatusId =
-    | "all"
-    | "pending"
-    | "needs_review"
-    | "expenses"
-    | "settlements";
-
-  type DateRangeId = "1d" | "1w" | "4w" | "3m" | "1y" | "all";
-
-  const DATE_RANGE_OPTIONS: readonly ActionFilterChip<DateRangeId>[] = [
-    { id: "1d", label: "1D" },
-    { id: "1w", label: "1W" },
-    { id: "4w", label: "4W" },
-    { id: "3m", label: "3M" },
-    { id: "1y", label: "1Y" },
-    { id: "all", label: "All" },
-  ];
-
-  const STATUS_OPTIONS: readonly ActionFilterChip<StatusId>[] = [
-    { id: "all", label: "All" },
-    { id: "pending", label: "Pending", span: 2 },
-    { id: "needs_review", label: "Needs Review", span: 3 },
-    { id: "expenses", label: "Expenses", span: 2 },
-    { id: "settlements", label: "Settlements", span: 3 },
   ];
 
   return (
@@ -454,42 +520,62 @@ export default function GroupDetail() {
       statusBarColor={colors.background}
       statusBarStyle="dark-content"
     >
-      <CustomHeader title="Goa Trip 2024" />
+      {/* The group's identity lives in the top bar now (photo · name ·
+          member count, one press target) — the old hero photo is gone and
+          the timeline gets the reclaimed half-screen. */}
+      <CustomHeader
+        centerContent={
+          <GroupHeaderIdentity
+            name="Goa Trip 2024"
+            memberCount={MOCK_MEMBER_BALANCES.length}
+            photoUrl="https://picsum.photos/200"
+            onPress={handleOpenGroupInfo}
+          />
+        }
+      />
 
-      {/* Center only the photo */}
-      <View
-        style={{
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <GroupPhotoDisplay src="https://picsum.photos/200" />
-      </View>
-
-      {/* Tab switcher */}
+      {/* Tabs sit directly under the top bar — compact so they stay quiet,
+          and they fade back while the timeline is scrolled. */}
       <GenericTabSwitcher
         tabs={groupDetailTabs}
         activeTab={activeTab}
         onTabChange={setActiveTab}
-        variant="unified"
+        variant="separated"
       />
 
       {/* Content based on active tab. The Activity timeline manages its own
-          gutters (its FlashList scrolls edge to edge, and a composer will be
-          pinned under it later), so the wrapper padding only applies to the
-          other tabs. */}
+          gutters (its FlashList scrolls edge to edge, and the composer is
+          pinned under it, outside the scroll), so the wrapper padding only
+          applies to the other tabs. */}
       <View style={{ flex: 1, padding: activeTab === "activity" ? 0 : 16 }}>
         {activeTab === "activity" && (
-          <GroupTimeline
-            items={MOCK_TIMELINE}
-            currentUserId={DEMO_CURRENT_USER_ID}
-          />
+          // iOS needs the padding behavior for the composer to ride the
+          // keyboard; Android already resizes the window (adjustResize).
+          <KeyboardAvoidingView
+            style={{ flex: 1 }}
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
+          >
+            <GroupTimeline
+              items={timeline}
+              currentUserId={DEMO_CURRENT_USER_ID}
+              onScrollOffsetChange={handleTimelineScroll}
+            />
+            <GroupBottomComposer
+              onSendComment={handleSendComment}
+              onAddExpense={handleAddExpense}
+              onRecordSettlement={handleRecordSettlement}
+            />
+          </KeyboardAvoidingView>
         )}
         {activeTab === "balances" && (
           <ScrollView
             contentContainerStyle={{ paddingBottom: 32, gap: Dimens.md }}
             showsVerticalScrollIndicator={false}
           >
+            <HistoricalTotalsCard
+              grandTotal={DEMO_HISTORICAL_GRAND_TOTAL}
+              onPress={handleOpenHistoricalTotals}
+            />
             <MemberBalances members={MOCK_MEMBER_BALANCES} />
             <SettlementSuggestions
               suggestions={MOCK_SETTLEMENT_PLAN}
@@ -497,14 +583,6 @@ export default function GroupDetail() {
               originalDebtCount={DEMO_ORIGINAL_DEBT_COUNT}
             />
           </ScrollView>
-        )}
-        {activeTab === "totals" && (
-          <ActionFilterChips
-            items={DATE_RANGE_OPTIONS}
-            value={selectedRange}
-            onChange={setSelectedRange}
-            variant="cards"
-          />
         )}
         {activeTab === "info" && (
           <Text style={{ color: colors.textPrimary }}>Group Info</Text>

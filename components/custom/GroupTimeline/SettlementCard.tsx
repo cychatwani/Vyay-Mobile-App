@@ -5,7 +5,7 @@ import { getCardV2 } from "@/constants/Styles";
 import { useColorsV2 } from "@/store/themeStore";
 import { Feather } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import React, { memo } from "react";
+import React, { memo, useRef } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { scale } from "react-native-size-matters";
@@ -13,7 +13,7 @@ import { formatAmount } from "../MemberBalances/balanceUtils";
 import PairAvatars from "../SettlementSuggestions/PairAvatars";
 import { currencySymbolFor } from "../SettlementSuggestions/settlementUtils";
 import { displayName, formatClockTime, isViewer } from "./timelineUtils";
-import type { SettlementEvent } from "./types";
+import type { EnsureCardVisibleFn, SettlementEvent } from "./types";
 import { useTimelineAccordion } from "./useTimelineAccordion";
 
 interface SettlementCardProps {
@@ -23,6 +23,8 @@ interface SettlementCardProps {
   onToggle: (id: string) => void;
   /** Navigates to the full settlement screen. Wired later. */
   onOpenDetails?: (event: SettlementEvent) => void;
+  /** Lets the list pre-scroll so the expanding card stays fully visible. */
+  onEnsureVisible?: EnsureCardVisibleFn;
 }
 
 /**
@@ -41,9 +43,11 @@ const SettlementCard = ({
   expanded,
   onToggle,
   onOpenDetails,
+  onEnsureVisible,
 }: SettlementCardProps) => {
   const colors = useColorsV2();
   const styles = getStyles(colors);
+  const rootRef = useRef<View>(null);
 
   const {
     collapseStyle,
@@ -51,6 +55,7 @@ const SettlementCard = ({
     chevronStyle,
     onContentLayout,
     toggleHaptic,
+    getExpandedContentHeight,
   } = useTimelineAccordion(event.id, expanded);
 
   const symbol = currencySymbolFor(event.currency);
@@ -77,14 +82,20 @@ const SettlementCard = ({
   const statusLabel = completed ? "Completed" : "Proposed";
 
   const handleToggle = () => {
-    toggleHaptic(!expanded);
+    const opening = !expanded;
+    toggleHaptic(opening);
+    if (opening) {
+      // Ask the list to keep us on screen — in the inverted timeline this
+      // card is about to grow upward by the detail's measured height.
+      onEnsureVisible?.(rootRef.current, getExpandedContentHeight());
+    }
     onToggle(event.id);
   };
 
   const a11yLabel = `Settlement ${statusLabel.toLowerCase()}. ${headline}, ${symbol}${formatAmount(event.amount)}, at ${time}.`;
 
   return (
-    <View style={styles.card}>
+    <View ref={rootRef} collapsable={false} style={styles.card}>
       {/* ---------- collapsed summary: also the accordion handle ---------- */}
       <Pressable
         style={[styles.summary, !expanded && styles.summaryCollapsed]}

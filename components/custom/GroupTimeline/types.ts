@@ -119,6 +119,17 @@ export interface MessageRunMeta {
   lastInRun: boolean;
 }
 
+/**
+ * A card calls this just before it expands, handing over its root native
+ * node and how much taller it is about to get. The list — the only thing
+ * that knows where the viewport is and can scroll — decides whether a
+ * corrective scroll is needed to keep the card fully visible.
+ */
+export type EnsureCardVisibleFn = (
+  cardNode: import("react-native").View | null,
+  growBy: number,
+) => void;
+
 export type TimelineRow =
   | { type: "day"; key: string; label: string }
   | { type: "expense"; key: string; event: ExpenseEvent }

@@ -75,7 +75,12 @@ export const useTimelineAccordion = (itemId: string, expanded: boolean) => {
 
   // Expanded content doesn't just appear — it rises into place.
   const contentStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(progress.value, [0.35, 1], [0, 1], Extrapolation.CLAMP),
+    opacity: interpolate(
+      progress.value,
+      [0.35, 1],
+      [0, 1],
+      Extrapolation.CLAMP,
+    ),
     transform: [{ translateY: interpolate(progress.value, [0, 1], [10, 0]) }],
   }));
 
@@ -92,11 +97,19 @@ export const useTimelineAccordion = (itemId: string, expanded: boolean) => {
     ).catch(() => {});
   };
 
+  /**
+   * How much taller this card is about to get, right now. Read on the JS
+   * thread at tap time so the list can pre-scroll and keep the whole card
+   * on screen (in the inverted timeline, cards grow *upward*).
+   */
+  const getExpandedContentHeight = () => contentHeight.value;
+
   return {
     collapseStyle,
     contentStyle,
     chevronStyle,
     onContentLayout,
     toggleHaptic,
+    getExpandedContentHeight,
   };
 };

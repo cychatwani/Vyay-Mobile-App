@@ -5,7 +5,7 @@ import { getCardV2 } from "@/constants/Styles";
 import { useColorsV2 } from "@/store/themeStore";
 import { Feather } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import React, { memo } from "react";
+import React, { memo, useRef } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { scale } from "react-native-size-matters";
@@ -14,7 +14,7 @@ import MemberAvatar from "../MemberBalances/MemberAvatar";
 import { currencySymbolFor } from "../SettlementSuggestions/settlementUtils";
 import ParticipantFacepile from "./ParticipantFacepile";
 import { displayName, formatClockTime } from "./timelineUtils";
-import type { ExpenseEvent } from "./types";
+import type { EnsureCardVisibleFn, ExpenseEvent } from "./types";
 import { useTimelineAccordion } from "./useTimelineAccordion";
 
 interface ExpenseCardProps {
@@ -24,6 +24,8 @@ interface ExpenseCardProps {
   onToggle: (id: string) => void;
   /** Navigates to the full expense screen. Wired later. */
   onOpenDetails?: (event: ExpenseEvent) => void;
+  /** Lets the list pre-scroll so the expanding card stays fully visible. */
+  onEnsureVisible?: EnsureCardVisibleFn;
 }
 
 /**
@@ -43,9 +45,11 @@ const ExpenseCard = ({
   expanded,
   onToggle,
   onOpenDetails,
+  onEnsureVisible,
 }: ExpenseCardProps) => {
   const colors = useColorsV2();
   const styles = getStyles(colors);
+  const rootRef = useRef<View>(null);
 
   const {
     collapseStyle,
@@ -53,6 +57,7 @@ const ExpenseCard = ({
     chevronStyle,
     onContentLayout,
     toggleHaptic,
+    getExpandedContentHeight,
   } = useTimelineAccordion(event.id, expanded);
 
   const symbol = currencySymbolFor(event.currency);
@@ -61,7 +66,13 @@ const ExpenseCard = ({
   const time = formatClockTime(event.createdAt);
 
   const handleToggle = () => {
-    toggleHaptic(!expanded);
+    const opening = !expanded;
+    toggleHaptic(opening);
+    if (opening) {
+      // Ask the list to keep us on screen — in the inverted timeline this
+      // card is about to grow upward by the detail's measured height.
+      onEnsureVisible?.(rootRef.current, getExpandedContentHeight());
+    }
     onToggle(event.id);
   };
 
@@ -71,7 +82,7 @@ const ExpenseCard = ({
     (isUpdate ? " Edited." : "");
 
   return (
-    <View style={styles.card}>
+    <View ref={rootRef} collapsable={false} style={styles.card}>
       {/* ---------- collapsed summary: also the accordion handle ---------- */}
       <Pressable
         style={[styles.summary, !expanded && styles.summaryCollapsed]}
