@@ -220,6 +220,8 @@ const GroupTimeline = ({
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
       />
     </View>
   );

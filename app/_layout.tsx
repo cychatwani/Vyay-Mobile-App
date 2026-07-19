@@ -7,6 +7,7 @@ import { Redirect, Slot, useSegments } from "expo-router";
 import * as SplashScreenNative from "expo-splash-screen";
 import { useEffect, useRef, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { KeyboardProvider } from "react-native-keyboard-controller";
 import "react-native-reanimated";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
@@ -135,14 +136,16 @@ export default function RootLayout() {
   // values. Without it, insets are all 0 and content renders under the notch.
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <BottomSheetModalProvider>
-          {content}
-          {/* One global sheet, mounted above the navigator so it can never be
-              remounted by a screen re-render and always paints over the tabs. */}
-          <SheetHost />
-        </BottomSheetModalProvider>
-      </SafeAreaProvider>
+      <KeyboardProvider>
+        <SafeAreaProvider>
+          <BottomSheetModalProvider>
+            {content}
+            {/* One global sheet, mounted above the navigator so it can never be
+                remounted by a screen re-render and always paints over the tabs. */}
+            <SheetHost />
+          </BottomSheetModalProvider>
+        </SafeAreaProvider>
+      </KeyboardProvider>
     </GestureHandlerRootView>
   );
 }

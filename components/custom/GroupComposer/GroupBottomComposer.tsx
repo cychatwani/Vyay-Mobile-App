@@ -38,8 +38,8 @@ import type { ActivityActionId } from "./types";
 
 /** Same emphasized curve as the timeline accordions — one motion language. */
 const EASE = Easing.bezier(0.2, 0, 0, 1);
-const ENTER_MS = 320;
-const EXIT_MS = 260;
+const ENTER_MS = 200;
+const EXIT_MS = 160;
 
 type ComposerMode = "idle" | "comment";
 
@@ -153,8 +153,10 @@ const GroupBottomComposer = ({
 
   const enterCommentMode = useCallback(() => {
     setMode("comment");
-    // Focus once the input has re-rendered as editable.
-    requestAnimationFrame(() => inputRef.current?.focus());
+    // The input is always mounted and always editable (the idle overlay is
+    // what blocks touches), so focus() lands synchronously — Android drops
+    // focus() on a TextInput whose native editable flag is still false.
+    inputRef.current?.focus();
   }, []);
 
   const exitIfEmpty = useCallback(() => {
@@ -215,12 +217,12 @@ const GroupBottomComposer = ({
           style={styles.input}
           value={text}
           onChangeText={setText}
-          editable={mode === "comment"}
           multiline
           placeholder={
             mode === "comment" ? "Type a comment..." : "Add a comment..."
           }
           placeholderTextColor={colors.text3}
+          onFocus={enterCommentMode}
           onBlur={exitIfEmpty}
           accessibilityLabel="Comment"
           maxLength={1000}

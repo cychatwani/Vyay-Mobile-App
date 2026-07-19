@@ -23,15 +23,16 @@ import type { SettlementSuggestion } from "@/components/custom/SettlementSuggest
 import { Dimens } from "@/constants/Dimes";
 import { openSheet } from "@/store/sheetStore";
 import { useColors } from "@/store/themeStore";
+import { router } from "expo-router";
 import { useCallback, useRef, useState } from "react";
-import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Text,
-  View,
-} from "react-native";
-import { useSharedValue, withTiming } from "react-native-reanimated";
+import { ScrollView, Text, View } from "react-native";
+import { useReanimatedKeyboardAnimation } from "react-native-keyboard-controller";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MOCK_TIMELINE } from "./mockTimeline";
 
 /* ------------------------------------------------------------------ *
@@ -451,6 +452,20 @@ export default function GroupDetail() {
   // composer land in the stream immediately. The API swaps in here later.
   const [timeline, setTimeline] = useState<TimelineItem[]>(MOCK_TIMELINE);
 
+  // The keyboard-controller KeyboardAvoidingView component doesn't apply its
+  // padding on this new-arch build, so the avoidance is driven directly from
+  // the library's reanimated hook: `height` runs 0 → -keyboardHeight on the
+  // UI thread, and the timeline+composer column pads up by that amount.
+  // The keyboard height is measured from the physical screen bottom, but
+  // SafeView already keeps this column insets.bottom above it — subtract
+  // that so the composer lands flush on the keyboard.
+  const insets = useSafeAreaInsets();
+  const { height: keyboardHeight } = useReanimatedKeyboardAnimation();
+  const bottomInset = insets.bottom;
+  const keyboardAvoidStyle = useAnimatedStyle(() => ({
+    paddingBottom: Math.max(0, -keyboardHeight.value - bottomInset),
+  }));
+
   // Tabs recede as the timeline is scrolled: full opacity at the top,
   // easing down to a quiet background level once the user scrolls in.
   const tabsOpacity = useSharedValue(1);
@@ -485,8 +500,7 @@ export default function GroupDetail() {
   }, []);
 
   const handleAddExpense = useCallback(() => {
-    // TODO: navigate to the add-expense flow once that screen exists.
-    console.log("Add Expense selected");
+    router.push("/(expense)/enterAmount");
   }, []);
 
   const handleRecordSettlement = useCallback(() => {
@@ -549,12 +563,9 @@ export default function GroupDetail() {
           applies to the other tabs. */}
       <View style={{ flex: 1, padding: activeTab === "activity" ? 0 : 16 }}>
         {activeTab === "activity" && (
-          // iOS needs the padding behavior for the composer to ride the
-          // keyboard; Android already resizes the window (adjustResize).
-          <KeyboardAvoidingView
-            style={{ flex: 1 }}
-            behavior={Platform.OS === "ios" ? "padding" : undefined}
-          >
+          // Both platforms ride the keyboard as an inset (edge-to-edge means
+          // Android no longer resizes the window for adjustResize either).
+          <Animated.View style={[{ flex: 1 }, keyboardAvoidStyle]}>
             <GroupTimeline
               items={timeline}
               currentUserId={DEMO_CURRENT_USER_ID}
@@ -565,7 +576,7 @@ export default function GroupDetail() {
               onAddExpense={handleAddExpense}
               onRecordSettlement={handleRecordSettlement}
             />
-          </KeyboardAvoidingView>
+          </Animated.View>
         )}
         {activeTab === "balances" && (
           <ScrollView
