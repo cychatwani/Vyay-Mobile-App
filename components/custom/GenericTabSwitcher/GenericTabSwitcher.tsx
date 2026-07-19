@@ -44,7 +44,7 @@ interface GenericTabSwitcherProps<T extends string> {
  * which is itself a perfect capsule. Corners look "intentional" because
  * they are mathematically related, not eyeballed.
  * ------------------------------------------------------------------ */
-const TRACK_HEIGHT = scale(44); // Apple minimum touch target
+const TRACK_HEIGHT = scale(20); // Apple minimum touch target
 const TRACK_INSET = scale(4);
 const TRACK_RADIUS = TRACK_HEIGHT / 2;
 const PILL_RADIUS = TRACK_RADIUS - TRACK_INSET;
@@ -249,7 +249,7 @@ const getStyles = (colors: ThemePaletteV2) =>
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
-      gap: scale(6),
+      gap: scale(4),
       zIndex: 1,
     },
     tabText: {
@@ -284,7 +284,7 @@ const getStyles = (colors: ThemePaletteV2) =>
       borderRadius: scale(20),
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: colors.border,
-      shadowColor: "#0D0E13",
+      shadowColor: colors.pr,
       shadowOffset: { width: 0, height: scale(2) },
       shadowOpacity: 0.04,
       shadowRadius: scale(6),
